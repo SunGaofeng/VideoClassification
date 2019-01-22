@@ -1,0 +1,21 @@
+[MODEL]
+name = "AttentionCluster"
+bone_nework = None
+feature_names = ['rgb', 'audio']
+feature_dims = [1024, 128]
+seg_num = 100
+cluster_nums = [32, 32]
+class_num = 3862
+
+[READER]
+batch_size = 1
+gpu_num = 8
+dataset = "YouTube-8M"
+data_dir = "data/pkl"
+train_dir = "train"
+test_dir = "val"
+
+[TRAIN]
+epoch = 5
+learning_rate = 0.001
+pretrain_base = None
