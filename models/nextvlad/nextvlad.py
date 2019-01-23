@@ -15,9 +15,6 @@
 import paddle.fluid as fluid
 from paddle.fluid import ParamAttr
 
-import datareader.reader as get_reader
-import metrics.get_metrics as get_metrics
-
 from ..model import ModelBase
 from clf_model import LogisticModel
 import nextvlad_model
@@ -25,9 +22,9 @@ import nextvlad_model
 __all__ = ["NEXTVLAD"]
 
 class NEXTVLAD(ModelBase):
-    def __init__(self, name, cfg, is_training = True, split = 'train'):
+    def __init__(self, name, cfg, is_training = True, mode='train'):
         super(NEXTVLAD, self).__init__(
-                name, cfg, is_training = (split == 'train'), split = split)
+                name, cfg, is_training = (mode == 'train'), mode = mode)
         self.get_config()
 
     def get_config(self):
@@ -52,8 +49,8 @@ class NEXTVLAD(ModelBase):
         self.num_gpus = self.get_train_config('num_gpus')
 
         # other params
-        self.batch_size = self.get_sec_config(self.split, 'batch_size')
-        self.list = self.get_sec_config(self.split, 'list')
+        self.batch_size = self.get_sec_config(self.mode, 'batch_size')
+        self.list = self.get_sec_config(self.mode, 'list')
 
 
     def build_input(self, use_pyreader = True):
@@ -89,7 +86,7 @@ class NEXTVLAD(ModelBase):
         videomodel = nextvlad_model.NeXtVLADModel()
         rgb = self.feature_input[0]
         audio = self.feature_input[1]
-        out = videomodel.create_model(rgb, audio, is_training = (self.split == 'train'), **model_args)
+        out = videomodel.create_model(rgb, audio, is_training = (self.mode == 'train'), **model_args)
         logits = out['logits']
         predictions = out['predictions']
         cost = fluid.layers.sigmoid_cross_entropy_with_logits(x = logits, label = self.label_input)
@@ -126,10 +123,6 @@ class NEXTVLAD(ModelBase):
         dataset_args['eigen_file'] = self.eigen_file
         return dataset_args
         
-    def reader(self):
-        dataset_args = self.create_dataset_args()
-        return get_reader.get_datareader(self.name.upper(), self.split, **dataset_args)
-
     def create_metrics_args(self):
         metrics_args = {}
         metrics_args['num_classes'] = self.num_classes
@@ -138,7 +131,7 @@ class NEXTVLAD(ModelBase):
 
     def metrics(self):
         metrics_args = self.create_metrics_args()
-        return get_metrics.get_metrics_model(self.name.upper(), self.split, **metrics_args)
+        return get_metrics.get_metrics_model(self.name.upper(), self.mode, **metrics_args)
 
 def get_learning_rate_decay_list(base_learning_rate, decay, max_iter, decay_examples, total_batch_size):
     decay_step = decay_examples // total_batch_size

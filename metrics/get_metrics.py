@@ -132,7 +132,7 @@ class NonlocalMetrics(Metrics):
 
 metrics_dict = {'NEXTVLAD': Youtube8mMetrics, \
                 'LSTM': Youtube8mMetrics, \
-                'ATTENTION_CLUSTER': Youtube8mMetrics, \
+                'ATTENTIONCLUSTER': Youtube8mMetrics, \
                 'TSN': Kinetics400Metrics, \
                 'TSM': Kinetics400Metrics, \
                 'STNET': Kinetics400Metrics, \

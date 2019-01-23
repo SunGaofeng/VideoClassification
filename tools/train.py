@@ -32,6 +32,10 @@ def parse_args():
                         help='name of model to train.')
     parser.add_argument('--config', type=str, default='configs/attention_cluster.txt',
                         help='path to config file of model')
+    parser.add_argument('--batch-size', type=int, default=None,
+                        help='traing batch size per GPU. None to use config file setting.')
+    parser.add_argument('--learning-rate', type=float, default=None,
+                        help='learning rate use for training. None to use config file setting.')
     parser.add_argument('--use-cpu', action='store_true', default=False,
                         help='default use gpu, set this to use cpu')
     parser.add_argument('--no-parallel', action='store_true', default=False,
@@ -59,7 +63,7 @@ def save_model(exe, program, args, postfix=None):
         shutil.rmtree(model_path)
     fluid.io.save_persistables(exe, model_path, main_program=program)
 
-def train(train_model, test_model, args):
+def train(train_model, valid_model, args):
     train_prog = fluid.Program()
     train_startup = fluid.Program()
     with fluid.program_guard(train_prog, train_startup):
@@ -85,22 +89,22 @@ def train(train_model, test_model, args):
         # fluid.memory_optimize(fluid.default_main_program())
         fluid.memory_optimize(train_prog)
 
-    test_prog = fluid.Program()
-    test_startup = fluid.Program()
-    with fluid.program_guard(test_prog, test_startup):
+    valid_prog = fluid.Program()
+    valid_startup = fluid.Program()
+    with fluid.program_guard(valid_prog, valid_startup):
         with fluid.unique_name.guard():
-            test_model.build_input(not args.no_use_pyreader)
-            test_model.build_model()
-            test_feeds = test_model.feeds()
-            test_outputs = test_model.outputs()
-            test_loss = test_model.loss()
-            test_reader = test_model.reader()
-            test_metrics = test_model.metrics()
+            valid_model.build_input(not args.no_use_pyreader)
+            valid_model.build_model()
+            valid_feeds = valid_model.feeds()
+            valid_outputs = valid_model.outputs()
+            valid_loss = valid_model.loss()
+            valid_reader = valid_model.reader()
+            valid_metrics = valid_model.metrics()
 
     place = fluid.CPUPlace() if args.use_cpu else fluid.CUDAPlace(0)
     exe = fluid.Executor(place)
     exe.run(train_startup)
-    exe.run(test_startup)
+    exe.run(valid_startup)
 
     pretrain_base = train_model.pretrain_base()
     if pretrain_base:
@@ -110,30 +114,30 @@ def train(train_model, test_model, args):
 
     if args.no_parallel:
         train_exe = exe
-        test_exe = exe
+        valid_exe = exe
     else:
         train_exe = fluid.ParallelExecutor(use_cuda=(not args.use_cpu), loss_name=train_loss.name, main_program=train_prog)
-        test_exe = fluid.ParallelExecutor(use_cuda=(not args.use_cpu), share_vars_from=train_exe, main_program=train_prog)
+        valid_exe = fluid.ParallelExecutor(use_cuda=(not args.use_cpu), share_vars_from=train_exe, main_program=train_prog)
 
     train_fetch_list = [train_loss.name] + [x.name for x in train_outputs] + [train_feeds[-1].name]
-    test_fetch_list = [test_loss.name] + [x.name for x in test_outputs] + [test_feeds[-1].name]
+    valid_fetch_list = [valid_loss.name] + [x.name for x in valid_outputs] + [valid_feeds[-1].name]
 
     epochs = args.epoch_num or train_model.epoch_num()
 
     if args.no_use_pyreader:
         train_feeder = fluid.DataFeeder(place=place, feed_list=train_feeds)
-        test_feeder = fluid.DataFeeder(place=place, feed_list=test_feeds)
+        valid_feeder = fluid.DataFeeder(place=place, feed_list=valid_feeds)
 
-        def test_without_pyreader():
+        def valid_without_pyreader():
             epoch_period = []
-            for test_iter, data in enumerate(test_reader()):
-                test_outs = test_exe.run(test_fetch_list, feed=test_feeder.feed(data))
-                if test_iter % args.log_interval == 0:
+            for valid_iter, data in enumerate(valid_reader()):
+                valid_outs = valid_exe.run(valid_fetch_list, feed=valid_feeder.feed(data))
+                if valid_iter % args.log_interval == 0:
                     # get eval string here
-                    test_iter_result = "hahaha"
-                    logger.info("[TEST] iter {:<6}: {}".format(test_iter, test_iter_result))
-            test_iter_result = "hahaha finish"
-            logger.info("[TEST] Finish: {}".format(test_iter_result))
+                    valid_iter_result = "hahaha"
+                    logger.info("[TEST] iter {:<6}: {}".format(valid_iter, valid_iter_result))
+            valid_iter_result = "hahaha finish"
+            logger.info("[TEST] Finish: {}".format(valid_iter_result))
 
         def train_without_pyreader():
             cur_time = time.time()
@@ -156,39 +160,39 @@ def train(train_model, test_model, args):
                 if (epoch + 1) % args.save_interval == 0:
                     save_model(exe, train_prog, args, "_epoch{}".format(epoch))
                 if (epoch + 1) % args.valid_interval == 0:
-                    test_without_pyreader()
+                    valid_without_pyreader()
 
         # start to train
         train_without_pyreader()
     else:
-        def test_with_pyreader():
-            test_pyreader = test_model.pyreader()
-            if not test_pyreader:
+        def valid_with_pyreader():
+            valid_pyreader = valid_model.pyreader()
+            if not valid_pyreader:
                 logger.error("[TEST] get pyreader failed.")
-            test_pyreader.decorate_paddle_reader(test_reader)
-            test_pyreader.start()
-            test_metrics.reset()
-            test_iter = 0
+            valid_pyreader.decorate_paddle_reader(valid_reader)
+            valid_pyreader.start()
+            valid_metrics.reset()
+            valid_iter = 0
             try:
                 while True:
-                    test_outs = test_exe.run(fetch_list=test_fetch_list)
-                    loss = np.array(test_outs[0])
-                    pred = np.array(test_outs[1])
-                    label = np.array(test_outs[-1])
-                    test_metrics.accumulate(loss, pred, label)
+                    valid_outs = valid_exe.run(fetch_list=valid_fetch_list)
+                    loss = np.array(valid_outs[0])
+                    pred = np.array(valid_outs[1])
+                    label = np.array(valid_outs[-1])
+                    valid_metrics.accumulate(loss, pred, label)
                     # do eval here
-                    test_iter += 1
-                    #if test_iter % arg.log_interval == 0:
+                    valid_iter += 1
+                    #if valid_iter % arg.log_interval == 0:
                     #    # get eval string here
-                    #    test_iter_result = "hahaha"
-                    #    logger.info("[TEST] iter {:<6}: {}".format(test_iter, test_iter_result))
+                    #    valid_iter_result = "hahaha"
+                    #    logger.info("[TEST] iter {:<6}: {}".format(valid_iter, valid_iter_result))
             except fluid.core.EOFException:
                 # get eval string here
-                #test_iter_result = "hahaha finish"
-                #logger.info("[TEST] Finish: {}".format(test_iter_result))
-                test_metrics.finalize_and_log_out("[TEST] Finish")
+                #valid_iter_result = "hahaha finish"
+                #logger.info("[TEST] Finish: {}".format(valid_iter_result))
+                valid_metrics.finalize_and_log_out("[TEST] Finish")
             finally:
-                test_pyreader.reset()
+                valid_pyreader.reset()
 
         def train_with_pyreader():
             train_pyreader = train_model.pyreader()
@@ -226,7 +230,7 @@ def train(train_model, test_model, args):
                     if (epoch + 1) % args.save_interval == 0:
                         save_model(exe, train_prog, args, "_epoch{}".format(epoch))
                     if (epoch + 1) % args.valid_interval == 0:
-                        test_with_pyreader()
+                        valid_with_pyreader()
                 finally:
                     epoch_period = []
                     train_pyreader.reset()
@@ -244,6 +248,8 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
-    train_model = models.get_model(args.model_name, args.config, is_training=True, split = 'train')
-    test_model = models.get_model(args.model_name, args.config, is_training=False, split = 'val')
-    train(train_model, test_model, args)
+    train_model = models.get_model(args.model_name, args.config, mode='train')
+    valid_model = models.get_model(args.model_name, args.config, mode='valid')
+    train_model.merge_configs('train', vars(args))
+    valid_model.merge_configs('valid', vars(args))
+    train(train_model, valid_model, args)

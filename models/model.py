@@ -19,9 +19,12 @@ try:
 except:
   from ConfigParser import ConfigParser
 
+import datareader.reader as get_reader
+import metrics.get_metrics as get_metrics
 import utils
+from utils import download, AttrDict
 
-WEIGHT_DIR = "~/.paddle/weights"
+WEIGHT_DIR = os.path.expanduser("~/.paddle/weights")
 
 class NotImplementError(Exception):
     "Error: model function not implement"
@@ -51,31 +54,45 @@ class ModelNotFoundError(Exception):
 class ModelConfig(object):
     def __init__(self, cfg_file):
         self.cfg_file = cfg_file
-        self.cfg = ConfigParser()
+        self.parser = ConfigParser()
+        self.cfg = AttrDict()
+
     def parse(self):
-        self.cfg.read(self.cfg_file)
-        for sec in self.cfg.sections():
-            sec_dict = {}
-            for k, v in self.cfg.items(sec):
+        self.parser.read(self.cfg_file)
+        for sec in self.parser.sections():
+            sec_dict = AttrDict()
+            for k, v in self.parser.items(sec):
                 try:
                     v = eval(v)
                 except:
                     pass
-                sec_dict[k] = v
-            setattr(self, sec.lower(), sec_dict)
+                setattr(sec_dict, k, v)
+            setattr(self.cfg, sec.upper(), sec_dict)
+
+    def merge_configs(self, sec, cfg_dict):
+        sec_dict = getattr(self.cfg, sec.upper())
+        for k, v in cfg_dict.items():
+            if v is None:
+                continue
+            if hasattr(sec_dict, k):
+                setattr(sec_dict, k, v)
+
+    def get_configs(self):
+        return self.cfg
 
 
 class ModelBase(object):
-    def __init__(self, name, cfg, is_training=True, split = 'train'):
+    def __init__(self, name, cfg, mode='train'):
         self.name = name
-        self.is_training = is_training
-        self.split = split
+        self.is_training = (mode=='train')
+        self.mode = mode
         self.py_reader = None
 
         # parse config
         assert os.path.exists(cfg), "Config file {} not exists".format(cfg)
         self._config = ModelConfig(cfg)
         self._config.parse()
+        self.cfg = self._config.get_configs()
 
     def build_model(self):
         "build model struct"
@@ -101,9 +118,21 @@ class ModelBase(object):
         "get feed inputs list"
         raise NotImplementError(self, self.feeds)
 
-    def reader(self):
+    def create_dataset_args(self):
         "get model reader"
-        raise NotImplementError(self, self.reader)
+        raise NotImplementError(self, self.create_dataset_args)
+
+    def reader(self):
+        dataset_args = self.create_dataset_args()
+        return get_reader.get_datareader(self.name.upper(), self.mode, **dataset_args)
+
+    def create_metrics_args(self):
+        "get model reader"
+        raise NotImplementError(self, self.create_metrics_args)
+
+    def metrics(self):
+        metrics_args = self.create_metrics_args()
+        return get_metrics.get_metrics_model(self.name.upper(), self.mode, **metrics_args)
 
     def weights_info(self):
         "get model weight default path and download url"
@@ -118,7 +147,7 @@ class ModelBase(object):
 
         if logger:
             logger.info("Download weights of {} from {}".format(self.name, url))
-        utils.download(url, path)
+        download(url, path)
         return path
 
     def pyreader(self):
@@ -126,37 +155,31 @@ class ModelBase(object):
 
     def epoch_num(self):
         "get train epoch num"
-        return self.get_train_config('epoch')
+        return self.cfg.TRAIN.epoch
 
     def pretrain_base(self):
         "get pretrain base model directory"
-        return self.get_train_config('pretrain_base')
+        return self.cfg.TRAIN.pretrain_base
 
-    def _get_config(self, sec, item, default=None):
-        try:
-            sec_dict = getattr(self._config, sec)
-            for k, v in sec_dict.items():
-                if k == item:
-                    return v
-            return default
-        except:
-            return default
+    def get_pretrain_weights(self, logger=None):
+        "get model weight file path, download weight from Paddle if not exist"
+        path, url = self.pretrain_info()
+        if not path:
+            return None
 
-    def get_model_config(self, item, default=None):
-        "Get config item in seciton MODEL"
-        return self._get_config('model', item, default)
+        path = os.path.join(WEIGHT_DIR, path)
+        if os.path.exists(path):
+            return path
 
-    def get_reader_config(self, item, default=None):
-        "Get config item in seciton READER"
-        return self._get_config('reader', item, default)
+        if logger:
+            logger.info("Download pretrain weights of {} from {}".format(self.name, url))
+        utils.download(url, path)
+        return path
 
-    def get_train_config(self, item, default=None):
-        "Get config item in seciton TRAIN"
-        return self._get_config('train', item, default)
 
-    def get_sec_config(self, sec, item, default=None):
-        "Get config item in seciton sec"
-        return self._get_config(sec, item, default)
+    def merge_configs(self, sec, cfg_dict):
+        return self._config.merge_configs(sec, cfg_dict)
+
 
 class ModelZoo(object):
     def __init__(self):
@@ -166,10 +189,10 @@ class ModelZoo(object):
         assert model.__base__ == ModelBase, "Unknow model type {}".format(type(model))
         self.model_zoo[name] = model
 
-    def get(self, name, cfg, is_training=True, split = 'train'):
+    def get(self, name, cfg, mode='train'):
         for k, v in self.model_zoo.items():
             if k == name:
-                return v(name, cfg, is_training, split)
+                return v(name, cfg, mode)
         raise ModelNotFoundError(name, self.model_zoo.keys())
 
 # singleton model_zoo
@@ -178,8 +201,8 @@ model_zoo = ModelZoo()
 def regist_model(name, model):
     model_zoo.regist(name, model)
 
-def get_model(name, cfg, is_training=True, split = 'train'):
-    return model_zoo.get(name, cfg, is_training, split)
+def get_model(name, cfg, mode='train'):
+    return model_zoo.get(name, cfg, mode)
 
 if __name__ == "__main__":
     class TestModel(ModelBase):

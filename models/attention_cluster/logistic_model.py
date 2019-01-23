@@ -19,7 +19,7 @@ class LogisticModel(object):
               size = vocab_size,
               act = None,
               name = 'logits_clf',
-              param_attr = fluid.ParamAttr(name = 'logisitc.weights',
+              param_attr = fluid.ParamAttr(name = 'logistic.weights',
                                   initializer = fluid.initializer.MSRA(uniform=False)),
               bias_attr = fluid.ParamAttr(name = 'logistic.bias',
                                   initializer = fluid.initializer.MSRA(uniform=False)))

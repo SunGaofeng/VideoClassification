@@ -31,6 +31,8 @@ def parse_args():
                         help='name of model to train.')
     parser.add_argument('--config', type=str, default='configs/attention_cluster.txt',
                         help='path to config file of model')
+    parser.add_argument('--batch-size', type=int, default=None,
+                        help='traing batch size per GPU. None to use config file setting.')
     parser.add_argument('--use-cpu', action='store_true', default=False,
                         help='default use gpu, set this to use cpu')
     parser.add_argument('--weights', type=str, default=None,
@@ -41,50 +43,51 @@ def parse_args():
     return args
 
 
-def eval(eval_model, args):
-    eval_model.build_input(use_pyreader=False)
-    eval_model.build_model()
-    eval_feeds = eval_model.feeds()
-    eval_outputs = eval_model.outputs()
-    eval_reader = eval_model.reader()
-    loss = eval_model.loss()
+def test(test_model, args):
+    test_model.build_input(use_pyreader=False)
+    test_model.build_model()
+    test_feeds = test_model.feeds()
+    test_outputs = test_model.outputs()
+    test_reader = test_model.reader()
+    loss = test_model.loss()
 
     place = fluid.CPUPlace() if args.use_cpu else fluid.CUDAPlace(0)
     exe = fluid.Executor(place)
 
-    weights = args.weights or eval_model.get_weights()
+    weights = args.weights or test_model.get_weights()
     def if_exist(var):
         return os.path.exists(os.path.join(weights, var.name))
     fluid.io.load_vars(exe, weights, predicate=if_exist)
 
-    eval_feeder = fluid.DataFeeder(place=place, feed_list=eval_feeds)
-    fetch_list = [loss.name] + [x.name for x in eval_outputs]
+    test_feeder = fluid.DataFeeder(place=place, feed_list=test_feeds)
+    fetch_list = [loss.name] + [x.name for x in test_outputs]
 
-    def _eval_loop():
+    def _test_loop():
         epoch_loss = []
         epoch_period = []
         cur_time = time.time()
-        for eval_iter, data in enumerate(eval_reader()):
-            eval_outs = exe.run(fetch_list=fetch_list, feed=eval_feeder.feed(data))
+        for test_iter, data in enumerate(test_reader()):
+            test_outs = exe.run(fetch_list=fetch_list, feed=test_feeder.feed(data))
             prev_time = cur_time
             cur_time = time.time()
             period = cur_time - prev_time
             epoch_period.append(period)
-            loss = np.mean(eval_outs[0])
+            loss = np.mean(test_outs[0])
             epoch_loss.append(loss)
 
             # metric here
             result = "example"
-            if eval_iter % args.log_interval == 0:
-                logger.info('[EVAL] Batch {:<3}, {}'.format(eval_iter, result))
+            if test_iter % args.log_interval == 0:
+                logger.info('[EVAL] Batch {:<3}, {}'.format(test_iter, result))
         logger.info('[EVAL] eval finished.')
 
     # start eval loop
-    _eval_loop()
+    _test_loop()
 
     
 if __name__ == "__main__":
     args = parse_args()
     
-    eval_model = models.get_model(args.model_name, args.config, is_training=False)
-    eval(eval_model, args)
+    test_model = models.get_model(args.model_name, args.config, mode='test')
+    test_model.merge_configs('TEST', vars(args))
+    test(test_model, args)

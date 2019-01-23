@@ -14,26 +14,33 @@
 #limitations under the License.
 
 import os
-import requests
+import wget
 import tarfile
 
+
+__all__ = ['decompress', 'download', 'AttrDict']
+
 def decompress(path):
-    t = tarfile.open(path, "w:gz")
-    t.extractall(path=path.strip(".tar.gz"))
+    t = tarfile.open(path)
+    t.extractall(path='/'.join(path.split('/')[:-1]))
+    t.close()
+    os.remove(path)
 
 def download(url, path):
     weight_dir = '/'.join(path.split('/')[:-1])
-    print(weight_dir)
     if not os.path.exists(weight_dir):
         os.makedirs(weight_dir)
 
-    req = requests.get(url, stream=True)
-    if req.status_code != 200:
-        raise RuntimeError("Downloading from url {} failed with code {}".format(url, req.status_code))
-    print(path)
-    with open(path, 'wb') as f:
-        for chunk in req.iter_content(chunk_size=1024):
-            if chunk:
-                f.write(chunk)
-
+    path = path + ".tar.gz"
+    wget.download(url, path)
     decompress(path)
+
+class AttrDict(dict):
+    def __getattr__(self, key):
+        return self[key]
+
+    def __setattr__(self, key, value):
+        if key in self.__dict__:
+            self.__dict__[key] = value
+        else:
+            self[key] = value
