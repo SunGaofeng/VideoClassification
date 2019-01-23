@@ -16,16 +16,16 @@ learning_rate = 0.001
 pretrain_base = None
 batch_size = 1
 gpu_num = 8
-list = "../data/outlist"
+list = "data/outlist"
 
 [VALID]
 batch_size = 1
-list = "../data/outlist"
+list = "data/outlist"
 
 [TEST]
 batch_size = 1
-list = "../data/outlist"
+list = "data/outlist"
 
 [INFER]
 batch_size = 1
-list = "../data/outlist"
+list = "data/outlist"

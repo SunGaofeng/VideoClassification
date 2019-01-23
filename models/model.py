@@ -77,6 +77,16 @@ class ModelConfig(object):
             if hasattr(sec_dict, k):
                 setattr(sec_dict, k, v)
 
+    def get_config_from_sec(self, sec, item):
+        if not hasattr(self.cfg, sec):
+            return None
+
+        sec_dict = getattr(self.cfg, sec)
+        if not hasattr(sec_dict, item):
+            return None
+
+        return getattr(sec_dict, item)
+
     def get_configs(self):
         return self.cfg
 
@@ -176,9 +186,12 @@ class ModelBase(object):
         utils.download(url, path)
         return path
 
-
     def merge_configs(self, sec, cfg_dict):
         return self._config.merge_configs(sec, cfg_dict)
+    
+    def get_config_from_sec(self, sec, item, default=None):
+        cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
+        return cfg_item
 
 
 class ModelZoo(object):

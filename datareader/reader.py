@@ -4,7 +4,7 @@ from nonlocal_reader import NonlocalReader
 
 reader_dict = {'NEXTVLAD': FeatureReader, \
                'LSTM': FeatureReader, \
-               'ATTENTION_CLUSTER': FeatureReader, \
+               'ATTENTIONCLUSTER': FeatureReader, \
                'TSN': KineticsReader, \
                'TSM': KineticsReader, \
                'STNET': KineticsReader, \
