@@ -19,8 +19,8 @@ try:
 except:
   from ConfigParser import ConfigParser
 
-import datareader.reader as get_reader
-import metrics.get_metrics as get_metrics
+from datareader import get_reader
+from  metrics import get_metrics
 import utils
 from utils import download, AttrDict
 
@@ -77,19 +77,32 @@ class ModelConfig(object):
             if hasattr(sec_dict, k):
                 setattr(sec_dict, k, v)
 
+    def get_config_from_sec(self, sec, item):
+	        if not hasattr(self.cfg, sec):
+	            return None
+	
+	        sec_dict = getattr(self.cfg, sec)
+	        if not hasattr(sec_dict, item):
+	            return None
+	
+	        return getattr(sec_dict, item)
+
     def get_configs(self):
         return self.cfg
 
 
 class ModelBase(object):
     def __init__(self, name, cfg, mode='train'):
+        assert mode in ['train', 'valid', 'test', 'infer'], \
+	                "Unknown mode type {}".format(mode)
         self.name = name
         self.is_training = (mode=='train')
         self.mode = mode
         self.py_reader = None
 
         # parse config
-        assert os.path.exists(cfg), "Config file {} not exists".format(cfg)
+        assert os.path.exists(cfg), \
+                "Config file {} not exists".format(cfg)
         self._config = ModelConfig(cfg)
         self._config.parse()
         self.cfg = self._config.get_configs()
@@ -124,7 +137,7 @@ class ModelBase(object):
 
     def reader(self):
         dataset_args = self.create_dataset_args()
-        return get_reader.get_datareader(self.name.upper(), self.mode, **dataset_args)
+        return get_reader(self.name.upper(), self.mode, **dataset_args)
 
     def create_metrics_args(self):
         "get model reader"
@@ -132,7 +145,7 @@ class ModelBase(object):
 
     def metrics(self):
         metrics_args = self.create_metrics_args()
-        return get_metrics.get_metrics_model(self.name.upper(), self.mode, **metrics_args)
+        return get_metrics(self.name.upper(), self.mode, **metrics_args)
 
     def weights_info(self):
         "get model weight default path and download url"
@@ -159,7 +172,10 @@ class ModelBase(object):
 
     def pretrain_base(self):
         "get pretrain base model directory"
-        return self.cfg.TRAIN.pretrain_base
+        if 'pretrain_base' in self.cfg.TRAIN.keys():
+            return self.cfg.TRAIN.pretrain_base
+        else:
+            return None
 
     def get_pretrain_weights(self, logger=None):
         "get model weight file path, download weight from Paddle if not exist"
@@ -179,6 +195,10 @@ class ModelBase(object):
 
     def merge_configs(self, sec, cfg_dict):
         return self._config.merge_configs(sec, cfg_dict)
+
+    def get_config_from_sec(self, sec, item, default=None):
+        cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
+        return cfg_item
 
 
 class ModelZoo(object):

@@ -130,17 +130,34 @@ class NonlocalMetrics(Metrics):
         self.calculator.reset()
 
 
-metrics_dict = {'NEXTVLAD': Youtube8mMetrics, \
-                'LSTM': Youtube8mMetrics, \
-                'ATTENTIONCLUSTER': Youtube8mMetrics, \
-                'TSN': Kinetics400Metrics, \
-                'TSM': Kinetics400Metrics, \
-                'STNET': Kinetics400Metrics, \
-                'NONLOCAL': NonlocalMetrics}
+class MetricsZoo(object):
+    def __init__(self):
+        self.metrics_zoo = {}
 
+    def regist(self, name, metrics):
+        assert metrics.__base__ == Metrics, "Unknow model type {}".format(type(metrics))
+        self.metrics_zoo[name] = metrics
 
-def get_metrics_model(name, phase, **metrics_args):
-    assert name in metrics_dict.keys()
-    metrics = metrics_dict[name](name, phase, **metrics_args)
-    return metrics
+    def get(self, name, mode, **cfg):
+        for k, v in self.metrics_zoo.items():
+            if k == name:
+                return v(name, mode, **cfg)
+        raise MetricsNotFoundError(name, self.metrics_zoo.keys())
+
+# singleton model_zoo
+metrics_zoo = MetricsZoo()
+
+def regist_metrics(name, metrics):
+    metrics_zoo.regist(name, metrics)
+
+regist_metrics("NEXTVLAD", Youtube8mMetrics)
+regist_metrics("LSTM", Youtube8mMetrics)
+regist_metrics("ATTENTIONCLUSTER", Youtube8mMetrics)
+regist_metrics("TSN", Kinetics400Metrics)
+regist_metrics("TSM", Kinetics400Metrics)
+regist_metrics("STNET", Kinetics400Metrics)
+regist_metrics("NONLOCAL", NonlocalMetrics)
+
+def get_metrics(name, mode = 'train', **cfg):
+    return metrics_zoo.get(name, mode, **cfg)
 

@@ -1,5 +1,13 @@
 #from core.config import config as cfg
-from reader_utils import *
+from reader_utils import DataReader
+try:
+    import cPickle as pickle
+    from cStringIO import StringIO
+except ImportError:
+    import pickle
+    from io import BytesIO
+import numpy as np
+import random
 
 class FeatureReader(DataReader):
     """
@@ -21,6 +29,8 @@ class FeatureReader(DataReader):
         self.filelist = cfg['list']
         if 'eigen_file' in cfg.keys():
             self.eigen_file = cfg['eigen_file']
+        if 'seg_num' in cfg.keys():
+            self.seg_num = cfg['seg_num']
 
     def create_reader(self):
         fl = open(self.filelist).readlines()
@@ -40,12 +50,13 @@ class FeatureReader(DataReader):
                     nframes = record['nframes']
                     rgb = record['feature'].astype(float)
                     audio = record['audio'].astype(float)
-                    label = record['label']
+                    if self.phase != 'infer':
+                        label = record['label']
+                        one_hot_label = make_one_hot(label, self.num_classes)
                     video = record['video']
 
                     rgb = rgb[0:nframes, :]  # Is this necessary?
                     audio = audio[0:nframes, :]  # Is this necessary?
-                    one_hot_label = make_one_hot(label, self.num_classes)
 
                     rgb = dequantize(rgb, max_quantized_value=2., min_quantized_value=-2.)
                     audio = dequantize(audio, max_quantized_value=2, min_quantized_value=-2)
@@ -56,8 +67,14 @@ class FeatureReader(DataReader):
                         eigen_val = np.sqrt(np.load(eigen_file)[:1024, 0]).astype(np.float32)
                         eigen_val = eigen_val + 1e-4
                         rgb = (rgb - 4. / 512) * eigen_val
-
-                    batch_out.append((rgb, audio, one_hot_label))
+                    if self.name == 'ATTENTIONCLUSTER':
+                        sample_inds = generate_random_tsn(rgb.shape[0], self.seg_num)
+                        rgb = rgb[sample_inds]
+                        audio = audio[sample_inds]
+                    if self.phase != 'infer':
+                        batch_out.append((rgb, audio, one_hot_label))
+                    else:
+                        batch_out.append((rgb, audio))
                     if len(batch_out) == self.batch_size:
                         yield batch_out
                         batch_out = []
@@ -84,3 +101,10 @@ def make_one_hot(label, dim = 3862):
     return one_hot_label
 
 
+def generate_random_tsn(feature_len, seg_num):
+    idxs = []
+    stride = float(feature_len) / seg_num
+    for i in range(seg_num):
+        pos = (i + np.random.random()) * stride
+        idxs.append(min(feature_len - 1, int(pos)))
+    return idxs

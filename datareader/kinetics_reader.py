@@ -15,7 +15,7 @@ from PIL import Image, ImageEnhance
 import logging
 
 # from core.config import config as cfg
-from reader_utils import *
+from reader_utils import DataReader
 
 logger = logging.getLogger(__name__)
 python_ver = sys.version_info
@@ -175,7 +175,7 @@ def decode_pickle(sample, phase, seg_num, short_size, target_size, img_mean, img
     imgs -= img_mean
     imgs /= img_std
 
-    if phase == 'train' or phase == 'val':
+    if phase == 'train' or phase == 'valid':
         return imgs, label
     elif phase == 'test':
         return imgs, vid

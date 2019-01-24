@@ -8,7 +8,7 @@ import cv2
 import logging
 
 import nonlocal_video_io
-from reader_utils import *
+from reader_utils import DataReader
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class NonlocalReader(DataReader):
         if self.phase == 'train':
             sample_times = 1
             return reader_func(cfg['list'], cfg['batch_size'], sample_times, True, True, **dataset_args)
-        elif self.phase == 'val':
+        elif self.phase == 'valid':
             sample_times = 1
             return reader_func(cfg['list'], cfg['batch_size'], sample_times, False, False, **dataset_args)
         elif self.phase == 'test':

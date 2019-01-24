@@ -22,7 +22,7 @@ num_gpus = 4
 batch_size = 40
 list = "../data/outlist"
 
-[VAL]
+[VALID]
 batch_size = 40
 list = "../data/outlist"
 

@@ -14,18 +14,18 @@ class_num = 3862
 epoch = 5
 learning_rate = 0.001
 pretrain_base = None
-batch_size = 1
-gpu_num = 8
+batch_size = 40
+gpu_num = 4
 list = "../data/outlist"
 
 [VALID]
-batch_size = 1
+batch_size = 40
 list = "../data/outlist"
 
 [TEST]
-batch_size = 1
+batch_size = 40
 list = "../data/outlist"
 
 [INFER]
-batch_size = 1
+batch_size = 40
 list = "../data/outlist"
