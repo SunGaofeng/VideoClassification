@@ -130,11 +130,3 @@ class AttentionCluster(ModelBase):
         metrics_args['topk'] = 20
         return metrics_args
 
-    def reader(self):
-        import numpy as np
-        def reader_():
-            for i in range(10):
-                yield [(np.random.randn(1, 100, 1024),
-                        np.random.randn(1, 100, 128),
-                        np.random.randn(1, 3862))]
-        return reader_
