@@ -194,10 +194,6 @@ class ModelBase(object):
 
     def merge_configs(self, sec, cfg_dict):
         return self._config.merge_configs(sec, cfg_dict)
-    
-    def get_config_from_sec(self, sec, item, default=None):
-        cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
-        return cfg_item
 
     def get_config_from_sec(self, sec, item, default=None):
         cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
