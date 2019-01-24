@@ -8,7 +8,7 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-def test_without_pyreader(test_exe, test_reader, test_feeder, test_fetch_list, test_metrics, log_interval = None):
+def test_without_pyreader(test_exe, test_reader, test_feeder, test_fetch_list, test_metrics, log_interval=0):
     test_metrics.reset()
     for test_iter, data in enumerate(test_reader()):
         test_outs = test_exe.run(test_fetch_list, feed=test_feeder.feed(data))
@@ -16,12 +16,12 @@ def test_without_pyreader(test_exe, test_reader, test_feeder, test_fetch_list, t
         pred = np.array(test_outs[1])
         label = np.array(test_outs[-1])
         test_metrics.accumulate(loss, pred, label)
-        if log_interval and test_iter % log_interval == 0:
+        if log_interval > 0 and test_iter % log_interval == 0:
             test_metrics.calculate_and_log_out(loss, pred, label, \
                   info = '[Test] test_iter {} '.format(test_iter))
     test_metrics.finalize_and_log_out("[TEST] Finish")
 
-def test_with_pyreader(test_exe, test_pyreader, test_fetch_list, test_metrics, log_interval = None):
+def test_with_pyreader(test_exe, test_pyreader, test_fetch_list, test_metrics, log_interval=0):
     if not test_pyreader:
         logger.error("[TEST] get pyreader failed.")
     test_pyreader.start()
@@ -34,7 +34,7 @@ def test_with_pyreader(test_exe, test_pyreader, test_fetch_list, test_metrics, l
             pred = np.array(test_outs[1])
             label = np.array(test_outs[-1])
             test_metrics.accumulate(loss, pred, label)
-            if log_interval and test_iter % log_interval == 0:
+            if log_interval > 0 and test_iter % log_interval == 0:
                 test_metrics.calculate_and_log_out(loss, pred, label, \
                   info = '[Test] test_iter {} '.format(test_iter))
             test_iter += 1
@@ -44,11 +44,10 @@ def test_with_pyreader(test_exe, test_pyreader, test_fetch_list, test_metrics, l
         test_pyreader.reset()
 
 
-def train_without_pyreader(exe, train_prog, \
-                           train_exe, train_reader, train_feeder, \
-                           train_fetch_list, train_metrics, \
-                           epochs = 10, log_interval = None, save_dir = './', save_model_name = 'model', \
-                           test_exe = None, test_reader = None, \
+def train_without_pyreader(exe, train_prog, train_exe, train_reader, train_feeder, \
+                           train_fetch_list, train_metrics, epochs = 10, \
+                           log_interval = 0, valid_interval = 0, save_dir = './', \
+                           save_model_name = 'model', test_exe = None, test_reader = None, \
                            test_feeder = None, test_fetch_list = None, test_metrics = None):
     for epoch in range(epochs):
         epoch_periods = []
@@ -60,22 +59,22 @@ def train_without_pyreader(exe, train_prog, \
             loss = np.array(train_outs[0])
             pred = np.array(train_outs[1])
             label = np.array(train_outs[-1])
-            if log_interval and (train_iter % log_interval == 0):
+            if log_interval > 0 and (train_iter % log_interval == 0):
                 # eval here
                 train_metrics.calculate_and_log_out(loss, pred, label, \
                        info = '[TRAIN] Epoch {}, iter {} '.format(epoch, train_iter))
             train_iter += 1
         logger.info('[TRAIN] Epoch {} training finished, average time: {}'.format(epoch, np.mean(epoch_periods)))
         save_model(exe, train_prog, save_dir, save_model_name, "_epoch{}".format(epoch))
-        if test_exe:
+        if test_exe and (epoch + 1) % valid_interval == 0:
             test_without_pyreader(test_exe, test_reader, test_feeder, test_fetch_list, test_metrics, log_interval)
 
 
 
-def train_with_pyreader(exe, train_prog, \
-                        train_exe, train_pyreader, \
-                        train_fetch_list, train_metrics, \
-                        epochs = 10, log_interval = None, save_dir = './', save_model_name = 'model', \
+def train_with_pyreader(exe, train_prog, train_exe, train_pyreader, \
+                        train_fetch_list, train_metrics, epochs = 10, \
+                        log_interval = 0, valid_interval = 0, \
+                        save_dir = './', save_model_name = 'model', \
                         test_exe = None, test_pyreader = None, \
                         test_fetch_list = None, test_metrics = None):
     if not train_pyreader:
@@ -94,7 +93,7 @@ def train_with_pyreader(exe, train_prog, \
                 loss = np.array(train_outs[0])
                 pred = np.array(train_outs[1])
                 label = np.array(train_outs[-1])
-                if log_interval and (train_iter % log_interval == 0):
+                if log_interval > 0 and (train_iter % log_interval == 0):
                     # eval here
                     train_metrics.calculate_and_log_out(loss, pred, label, \
                                 info = '[TRAIN] Epoch {}, iter {} '.format(epoch, train_iter))
@@ -103,7 +102,7 @@ def train_with_pyreader(exe, train_prog, \
             # eval here
             logger.info('[TRAIN] Epoch {} training finished, average time: {}'.format(epoch, np.mean(epoch_periods)))
             save_model(exe, train_prog, save_dir, save_model_name, "_epoch{}".format(epoch))
-            if test_exe:
+            if test_exe and valid_interval > 0:
                 test_with_pyreader(test_exe, test_pyreader, test_fetch_list, test_metrics, log_interval)
         finally:
             epoch_period = []

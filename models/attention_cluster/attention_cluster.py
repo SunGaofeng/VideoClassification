@@ -31,22 +31,36 @@ class AttentionCluster(ModelBase):
             shapes = []
             for dim in self.cfg.MODEL.feature_dims:
                 shapes.append([-1, self.cfg.MODEL.seg_num, dim])
-            shapes.append([-1, self.cfg.MODEL.class_num])
-            self.py_reader = fluid.layers.py_reader(
-                capacity = 1024,
-                shapes = shapes,
-                lod_levels = [0] * (self.cfg.MODEL.feature_num + 1),
-                dtypes = ['float32'] * (self.cfg.MODEL.feature_num + 1),
-                name = 'train_py_reader' if self.is_training else 'test_py_reader',
-                use_double_buffer = True)
-            inputs = fluid.layers.read_file(self.py_reader)
-            self.feature_input = inputs[:self.cfg.MODEL.feature_num]
-            self.label_input = inputs[-1]
+            if self.mode == 'infer':
+                shapes.append([-1, 1]) # video id
+                self.py_reader = fluid.layers.py_reader(
+                    capacity = 1024,
+                    shapes = shapes,
+                    lod_levels = [0] * (self.cfg.MODEL.feature_num + 1),
+                    dtypes = ['float32'] * self.cfg.MODEL.feature_num + ['int32'],
+                    name = 'train_py_reader' if self.is_training else 'test_py_reader',
+                    use_double_buffer = True)
+                inputs = fluid.layers.read_file(self.py_reader)
+                self.feature_input = inputs[:self.cfg.MODEL.feature_num]
+                self.video_id = inputs[-1]
+            else:
+                shapes.append([-1, self.cfg.MODEL.class_num]) # label
+                self.py_reader = fluid.layers.py_reader(
+                    capacity = 1024,
+                    shapes = shapes,
+                    lod_levels = [0] * (self.cfg.MODEL.feature_num + 1),
+                    dtypes = ['float32'] * (self.cfg.MODEL.feature_num + 1),
+                    name = 'train_py_reader' if self.is_training else 'test_py_reader',
+                    use_double_buffer = True)
+                inputs = fluid.layers.read_file(self.py_reader)
+                self.feature_input = inputs[:self.cfg.MODEL.feature_num]
+                self.label_input = inputs[-1]
         else:
             self.feature_input = []
             for name, dim in zip(self.cfg.MODEL.feature_names, self.cfg.MODEL.feature_dims):
                 self.feature_input.append(fluid.layers.data(shape=[self.cfg.MODEL.seg_num, dim], dtype='float32', name=name))
             self.label_input = fluid.layers.data(shape=[self.cfg.MODEL.class_num], dtype='float32', name='label')
+            self.video_id = fluid.layers.data(shape=[1], dtype='int32', name='video_id')
         
     def build_model(self):
         att_outs = []
@@ -77,9 +91,11 @@ class AttentionCluster(ModelBase):
                                     vocab_size = self.cfg.MODEL.class_num,
                                     is_training = self.is_training)
 
-        cost = fluid.layers.sigmoid_cross_entropy_with_logits(x = self.logit, label = self.label_input)
-        cost = fluid.layers.reduce_sum(cost, dim = -1)
-        self.loss_ = fluid.layers.mean(x = cost)
+        self.loss_ = None
+        if self.mode != 'infer':
+            cost = fluid.layers.sigmoid_cross_entropy_with_logits(x = self.logit, label = self.label_input)
+            cost = fluid.layers.reduce_sum(cost, dim = -1)
+            self.loss_ = fluid.layers.mean(x = cost)
 
     def optimizer(self):
         return fluid.optimizer.AdamOptimizer(self.cfg.TRAIN.learning_rate)
@@ -91,19 +107,14 @@ class AttentionCluster(ModelBase):
         return [self.output, self.logit]
 
     def feeds(self):
-        return self.feature_input + [self.label_input]
+        if self.mode == 'infer':
+            return self.feature_input + [self.video_id]
+        else:
+            return self.feature_input + [self.label_input]
 
     def weights_info(self):
         return ("attention_cluster_youtube8m", 
                 "https://paddlemodels.bj.bcebos.com/video_classification/attention_cluster_youtube8m.tar.gz")
-
-    def create_dataset_args(self):
-        dataset_args = {}
-        dataset_args['num_classes'] = self.cfg.MODEL.class_num
-        dataset_args['seg_num'] = self.cfg.MODEL.seg_num
-        dataset_args['batch_size'] = self.get_config_from_sec(self.mode, 'batch_size')
-        dataset_args['list'] = self.get_config_from_sec(self.mode, 'list')
-        return dataset_args
     
     def create_dataset_args(self):
         dataset_args = {}
@@ -118,3 +129,12 @@ class AttentionCluster(ModelBase):
         metrics_args['num_classes'] = self.cfg.MODEL.class_num
         metrics_args['topk'] = 20
         return metrics_args
+
+    def reader(self):
+        import numpy as np
+        def reader_():
+            for i in range(10):
+                yield [(np.random.randn(1, 100, 1024),
+                        np.random.randn(1, 100, 128),
+                        np.random.randn(1, 3862))]
+        return reader_
