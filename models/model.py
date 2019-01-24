@@ -93,13 +93,16 @@ class ModelConfig(object):
 
 class ModelBase(object):
     def __init__(self, name, cfg, mode='train'):
+        assert mode in ['train', 'valid', 'test', 'infer'], \
+                "Unknown mode type {}".format(mode)
         self.name = name
         self.is_training = (mode=='train')
         self.mode = mode
         self.py_reader = None
 
         # parse config
-        assert os.path.exists(cfg), "Config file {} not exists".format(cfg)
+        assert os.path.exists(cfg), \
+                "Config file {} not exists".format(cfg)
         self._config = ModelConfig(cfg)
         self._config.parse()
         self.cfg = self._config.get_configs()
