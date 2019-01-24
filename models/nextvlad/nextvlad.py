@@ -72,11 +72,11 @@ class NEXTVLAD(ModelBase):
             self.label_input = label
             self.py_reader = py_reader
         else:
-            rgb = fluid.layers.data(name='train_rgb' if is_training else 'test_rgb', 
+            rgb = fluid.layers.data(name='train_rgb' if self.is_training else 'test_rgb', 
                                     shape=rgb_shape, dtype='float32', lod_level=1)
-            audio = fluid.layers.data(name='train_audio' if is_training else 'test_audio', 
+            audio = fluid.layers.data(name='train_audio' if self.is_training else 'test_audio', 
                                     shape=audio_shape, dtype='float32', lod_level=1)
-            label = fluid.layers.data(name='train_label' if is_training else 'test_label', 
+            label = fluid.layers.data(name='train_label' if self.is_training else 'test_label', 
                                       shape=label_shape, dtype='float32')
             self.feature_input = [rgb, audio]
             self.label_input = label

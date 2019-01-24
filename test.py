@@ -13,17 +13,17 @@
 #limitations under the License.
 
 import os
+import sys
 import time
 import logging
 import argparse
 import numpy as np
 import paddle.fluid as fluid
-
 import models
 
-logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+FORMAT = '[%(levelname)s: %(filename)s: %(lineno)4d]: %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
+logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -49,6 +49,7 @@ def test(test_model, args):
     test_feeds = test_model.feeds()
     test_outputs = test_model.outputs()
     test_reader = test_model.reader()
+    test_metrics = test_model.metrics()
     loss = test_model.loss()
 
     place = fluid.CPUPlace() if args.use_cpu else fluid.CUDAPlace(0)
@@ -60,26 +61,26 @@ def test(test_model, args):
     fluid.io.load_vars(exe, weights, predicate=if_exist)
 
     test_feeder = fluid.DataFeeder(place=place, feed_list=test_feeds)
-    fetch_list = [loss.name] + [x.name for x in test_outputs]
+    fetch_list = [loss.name] + [x.name for x in test_outputs] + [test_feeds[-1].name]
 
     def _test_loop():
-        epoch_loss = []
         epoch_period = []
-        cur_time = time.time()
         for test_iter, data in enumerate(test_reader()):
-            test_outs = exe.run(fetch_list=fetch_list, feed=test_feeder.feed(data))
-            prev_time = cur_time
             cur_time = time.time()
-            period = cur_time - prev_time
+            test_outs = exe.run(fetch_list=fetch_list, feed=test_feeder.feed(data))
+            period = time.time() - cur_time
             epoch_period.append(period)
-            loss = np.mean(test_outs[0])
-            epoch_loss.append(loss)
+            loss = np.array(test_outs[0])
+            pred = np.array(test_outs[1])
+            label = np.array(test_outs[-1])
+            test_metrics.accumulate(loss, pred, label)
 
             # metric here
-            result = "example"
             if test_iter % args.log_interval == 0:
-                logger.info('[EVAL] Batch {:<3}, {}'.format(test_iter, result))
-        logger.info('[EVAL] eval finished.')
+                info_str = '[EVAL] Batch {}'.format(test_iter)
+                test_metrics.calculate_and_log_out(loss, pred, label, info_str)
+        test_metrics.finalize_and_log_out("[EVAL] eval finished. ")
+
 
     # start eval loop
     _test_loop()

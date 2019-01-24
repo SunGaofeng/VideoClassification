@@ -21,7 +21,7 @@ import argparse
 import numpy as np
 import paddle.fluid as fluid
 
-from train_utils import train_with_pyreader, train_without_pyreader
+from tools.train_utils import train_with_pyreader, train_without_pyreader
 import models
 
 FORMAT = '[%(levelname)s: %(filename)s: %(lineno)4d]: %(message)s'

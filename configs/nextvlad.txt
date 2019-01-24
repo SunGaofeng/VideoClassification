@@ -9,7 +9,7 @@ groups = 8
 expansion = 2
 drop_rate = 0.5
 gating_reduction = 8
-eigen_file = "../data/eigenvals.npy"
+eigen_file = "./data/eigenvals.npy"
 
 [TRAIN]
 base_learning_rate = 0.0002
@@ -20,12 +20,12 @@ l2_penalty = 1e-5
 gradient_clip_norm = 1.0
 num_gpus = 4
 batch_size = 40
-list = "../data/outlist"
+list = "./data/outlist"
 
 [VALID]
 batch_size = 40
-list = "../data/outlist"
+list = "./data/outlist"
 
 [TEST]
 batch_size = 40
-list = "../data/outlist"
+list = "./data/outlist"
