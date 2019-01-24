@@ -91,16 +91,14 @@ class AttentionCluster(ModelBase):
                                     vocab_size = self.cfg.MODEL.class_num,
                                     is_training = self.is_training)
 
-        self.loss_ = None
-        if self.mode != 'infer':
-            cost = fluid.layers.sigmoid_cross_entropy_with_logits(x = self.logit, label = self.label_input)
-            cost = fluid.layers.reduce_sum(cost, dim = -1)
-            self.loss_ = fluid.layers.mean(x = cost)
-
     def optimizer(self):
         return fluid.optimizer.AdamOptimizer(self.cfg.TRAIN.learning_rate)
 
     def loss(self):
+        assert self.mode != 'infer', "invalid loss calculationg in infer mode"
+        cost = fluid.layers.sigmoid_cross_entropy_with_logits(x = self.logit, label = self.label_input)
+        cost = fluid.layers.reduce_sum(cost, dim = -1)
+        self.loss_ = fluid.layers.mean(x = cost)
         return self.loss_
 
     def outputs(self):
