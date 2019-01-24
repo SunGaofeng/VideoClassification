@@ -105,19 +105,16 @@ class AttentionCluster(ModelBase):
         dataset_args['list'] = self.get_config_from_sec(self.mode, 'list')
         return dataset_args
     
+    def create_dataset_args(self):
+        dataset_args = {}
+        dataset_args['num_classes'] = self.cfg.MODEL.class_num
+        dataset_args['seg_num'] = self.cfg.MODEL.seg_num
+        dataset_args['batch_size'] = self.get_config_from_sec(self.mode, 'batch_size')
+        dataset_args['list'] = self.get_config_from_sec(self.mode, 'list')
+        return dataset_args
+        
     def create_metrics_args(self):
         metrics_args = {}
         metrics_args['num_classes'] = self.cfg.MODEL.class_num
         metrics_args['topk'] = 20
         return metrics_args
-        
-    #def reader(self):
-    #    import numpy as np
-    #    def reader_():
-    #        for i in range(10):
-    #            yield [(np.random.random((1, self.cfg.MODEL.seg_num, 1024)),
-    #                    np.random.random((1, self.cfg.MODEL.seg_num, 128)),
-    #                    np.random.random((1, self.cfg.MODEL.class_num)))]
-    #    return reader_
-    
-

@@ -1,1 +1,3 @@
 checkpoints
+output*
+*.pyc

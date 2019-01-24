@@ -78,14 +78,14 @@ class ModelConfig(object):
                 setattr(sec_dict, k, v)
 
     def get_config_from_sec(self, sec, item):
-	        if not hasattr(self.cfg, sec):
-	            return None
-	
-	        sec_dict = getattr(self.cfg, sec)
-	        if not hasattr(sec_dict, item):
-	            return None
-	
-	        return getattr(sec_dict, item)
+        if not hasattr(self.cfg, sec):
+            return None
+
+        sec_dict = getattr(self.cfg, sec)
+        if not hasattr(sec_dict, item):
+            return None
+
+        return getattr(sec_dict, item)
 
     def get_configs(self):
         return self.cfg
@@ -94,7 +94,7 @@ class ModelConfig(object):
 class ModelBase(object):
     def __init__(self, name, cfg, mode='train'):
         assert mode in ['train', 'valid', 'test', 'infer'], \
-	                "Unknown mode type {}".format(mode)
+                "Unknown mode type {}".format(mode)
         self.name = name
         self.is_training = (mode=='train')
         self.mode = mode
@@ -192,9 +192,12 @@ class ModelBase(object):
         utils.download(url, path)
         return path
 
-
     def merge_configs(self, sec, cfg_dict):
         return self._config.merge_configs(sec, cfg_dict)
+    
+    def get_config_from_sec(self, sec, item, default=None):
+        cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
+        return cfg_item
 
     def get_config_from_sec(self, sec, item, default=None):
         cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
