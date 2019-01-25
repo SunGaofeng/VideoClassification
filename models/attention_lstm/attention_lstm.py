@@ -61,7 +61,6 @@ class AttentionLSTM(ModelBase):
             self.video_id = fluid.layers.data(shape=[1], dtype='int32', name='video_id')
         
     def build_model(self):
-
         att_outs = []
         for i, (input_dim, feature) in enumerate(zip(self.cfg.MODEL.feature_dims, self.feature_input)):
             att = LSTMAttentionModel(input_dim, self.cfg.MODEL.embedding_size, self.cfg.MODEL.lstm_size)

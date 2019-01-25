@@ -92,6 +92,7 @@ class AttentionCluster(ModelBase):
                                     is_training = self.is_training)
 
     def optimizer(self):
+        assert self.mode == 'train', "optimizer only can be get in train mode"
         return fluid.optimizer.AdamOptimizer(self.cfg.TRAIN.learning_rate)
 
     def loss(self):
