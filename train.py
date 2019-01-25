@@ -105,7 +105,7 @@ def train(train_model, valid_model, args):
 
     pretrain_base = train_model.pretrain_base()
     if pretrain_base:
-        train_model.load_pretrained_params(exe, pretrain_base, train_startup, place)
+        train_model.load_pretrained_params(exe, pretrain_base, train_prog, place)
 
     if args.no_parallel:
         train_exe = exe
