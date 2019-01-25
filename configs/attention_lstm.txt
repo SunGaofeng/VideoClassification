@@ -20,16 +20,16 @@ num_samples = 5000000
 pretrain_base = None
 batch_size = 40
 gpu_num = 4
-list = "data/outlist"
+list = "data/train.list"
 
 [VALID]
 batch_size = 40
-list = "data/outlist"
+list = "data/test.list"
 
 [TEST]
 batch_size = 40
-list = "data/outlist"
+list = "data/train.list"
 
 [INFER]
 batch_size = 40
-list = "data/outlist"
+list = "data/train.list"
