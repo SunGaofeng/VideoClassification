@@ -5,7 +5,7 @@ from .nonlocal_reader import NonlocalReader
 
 regist_reader("ATTENTIONCLUSTER", FeatureReader)
 regist_reader("NEXTVLAD", FeatureReader)
-regist_reader("LSTM", FeatureReader)
+regist_reader("ATTENTIONLSTM", FeatureReader)
 regist_reader("TSN", KineticsReader)
 regist_reader("TSM", KineticsReader)
 regist_reader("STNET", KineticsReader)
