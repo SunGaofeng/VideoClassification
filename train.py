@@ -105,9 +105,7 @@ def train(train_model, valid_model, args):
 
     pretrain_base = train_model.pretrain_base()
     if pretrain_base:
-        def if_exist(var):
-            return os.path.exists(os.path.join(pretrain_base, var.name))
-        fluid.io.load_vars(exe, pretrain_base, prediccate=if_exist, main_program=train_startup)
+        train_model.load_pretrained_params(exe, pretrain_base, train_startup, place)
 
     if args.no_parallel:
         train_exe = exe

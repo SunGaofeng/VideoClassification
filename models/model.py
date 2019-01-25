@@ -192,6 +192,12 @@ class ModelBase(object):
         utils.download(url, path)
         return path
 
+    def load_pretrained_params(self, exe, pretrained_base, prog, place):
+        def if_exist(var):
+            return os.path.exists(os.path.join(pretrained_base, var.name))
+        inference_program = prog.clone(for_test=True)
+        fluid.io.load_vars(exe, pretrained_base, prediccate=if_exist, main_program = inference_program)
+
     def merge_configs(self, sec, cfg_dict):
         return self._config.merge_configs(sec, cfg_dict)
 

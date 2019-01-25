@@ -45,6 +45,7 @@ class KineticsReader(DataReader):
         self.format = cfg['format']
         self.num_classes = cfg['num_classes']
         self.seg_num = cfg['seg_num']
+        self.seglen = cfg['seglen']
         self.short_size = cfg['short_size']
         self.target_size = cfg['target_size']
         self.num_reader_threads = cfg['num_reader_threads']
@@ -58,7 +59,7 @@ class KineticsReader(DataReader):
 
 
     def create_reader(self):
-        xx = _reader_creator(self.filelist, self.phase, seg_num=self.seg_num, \
+        xx = _reader_creator(self.filelist, self.phase, seg_num=self.seg_num, seglen = self.seglen, \
                              short_size = self.short_size, target_size = self.target_size, \
                              img_mean = self.img_mean, img_std = self.img_std, \
                              shuffle = (self.phase == 'train'), \
@@ -79,6 +80,7 @@ class KineticsReader(DataReader):
 def _reader_creator(pickle_list,
                     phase,
                     seg_num,
+                    seglen,
                     short_size,
                     target_size,
                     img_mean,
@@ -105,6 +107,7 @@ def _reader_creator(pickle_list,
         decode_func,
         phase=phase,
         seg_num=seg_num,
+        seglen = seglen,
         short_size=short_size,
         target_size=target_size, 
         img_mean = img_mean,
@@ -113,11 +116,11 @@ def _reader_creator(pickle_list,
     return paddle.reader.xmap_readers(mapper, reader, num_threads, buf_size)
 
 
-def decode_mp4(sample, phase, seg_num, short_size, target_size, img_mean, img_std):
+def decode_mp4(sample, phase, seg_num, seglen, short_size, target_size, img_mean, img_std):
     sample = sample[0].split(' ')
     mp4_path = sample[0]
     label = int(sample[1])
-    imgs = mp4_loader(mp4_path, seg_num, phase)
+    imgs = mp4_loader(mp4_path, seg_num, seglen, phase)
     imgs = group_scale(imgs, short_size)
 
     if phase == 'train':
@@ -135,11 +138,12 @@ def decode_mp4(sample, phase, seg_num, short_size, target_size, img_mean, img_st
     imgs = np_imgs
     imgs -= img_mean
     imgs /= img_std
+    imgs = np.reshape(imgs, (seg_num, seglen*3, target_size, target_size))
 
     return imgs, label
 
 
-def decode_pickle(sample, phase, seg_num, short_size, target_size, img_mean, img_std):
+def decode_pickle(sample, phase, seg_num, seglen, short_size, target_size, img_mean, img_std):
     pickle_path = sample[0]
     try:
         if python_ver < (3, 0):
@@ -156,7 +160,7 @@ def decode_pickle(sample, phase, seg_num, short_size, target_size, img_mean, img
         return None, None
 
 
-    imgs = video_loader(frames, seg_num, phase)
+    imgs = video_loader(frames, seg_num, seglen, phase)
     imgs = group_scale(imgs, short_size)
 
     if phase == 'train':
@@ -174,6 +178,7 @@ def decode_pickle(sample, phase, seg_num, short_size, target_size, img_mean, img
     imgs = np_imgs
     imgs -= img_mean
     imgs /= img_std
+    imgs = np.reshape(imgs, (seg_num, seglen*3, target_size, target_size))
 
     if phase == 'train' or phase == 'valid':
         return imgs, label
@@ -254,7 +259,7 @@ def imageloader(buf):
     return img.convert('RGB')
 
 
-def video_loader(frames, nsample, phase):
+def video_loader(frames, nsample, seglen, phase):
     videolen = len(frames)
     average_dur = int(videolen / nsample)
 
@@ -262,26 +267,31 @@ def video_loader(frames, nsample, phase):
     for i in range(nsample):
         idx = 0
         if phase == 'train':
-            if average_dur >= 1:
-                idx = random.randint(0, average_dur - 1)
+            if average_dur >= seglen:
+                idx = random.randint(0, average_dur - seglen)
                 idx += i * average_dur
+            elif average_dur >= 1:
+                idx += i*average_dur
             else:
                 idx = i
         else:
-            if average_dur >= 1:
-                idx = (average_dur - 1) // 2
+            if average_dur >= seglen:
+                idx = (average_dur - seglen) // 2
                 idx += i * average_dur
+            elif average_dur >= 1:
+                idx += i*average_dur
             else:
                 idx = i
 
-        imgbuf = frames[int(idx % videolen)]
-        img = imageloader(imgbuf)
-        imgs.append(img)
+        for jj in range(idx, idx + seglen):
+            imgbuf = frames[int(jj % videolen)]
+            img = imageloader(imgbuf)
+            imgs.append(img)
 
     return imgs
 
 
-def mp4_loader(filepath, nsample, phase):
+def mp4_loader(filepath, nsample, seglen, phase):
     cap = cv2.VideoCapture(filepath)
     videolen = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     average_dur = int(videolen / nsample)
@@ -298,20 +308,26 @@ def mp4_loader(filepath, nsample, phase):
     for i in range(nsample):
         idx = 0
         if phase == 'train':
-            if average_dur >= 1:
-                idx = random.randint(0, average_dur - 1)
+            if average_dur >= seglen:
+                idx = random.randint(0, average_dur - seglen)
+                idx += i * average_dur
+            elif average_dur >= 1:
                 idx += i * average_dur
             else:
                 idx = i
         else:
-            if average_dur >= 1:
+            if average_dur >= seglen:
                 idx = (average_dur - 1) // 2
+                idx += i * average_dur
+            elif average_dur >= 1:
                 idx += i * average_dur
             else:
                 idx = i
-        imgbuf = sampledFrames[int(idx % videolen)]
-        img = Image.fromarray(imgbuf, mode = 'RGB')
-        imgs.append(img)
+
+        for jj in range(idx, idx + seglen):
+            imgbuf = sampledFrames[int(jj % videolen)]
+            img = Image.fromarray(imgbuf, mode = 'RGB')
+            imgs.append(img)
 
     return imgs
 
