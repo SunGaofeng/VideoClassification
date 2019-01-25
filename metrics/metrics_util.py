@@ -151,7 +151,7 @@ def regist_metrics(name, metrics):
     metrics_zoo.regist(name, metrics)
 
 regist_metrics("NEXTVLAD", Youtube8mMetrics)
-regist_metrics("LSTM", Youtube8mMetrics)
+regist_metrics("ATTENTIONLSTM", Youtube8mMetrics)
 regist_metrics("ATTENTIONCLUSTER", Youtube8mMetrics)
 regist_metrics("TSN", Kinetics400Metrics)
 regist_metrics("TSM", Kinetics400Metrics)

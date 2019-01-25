@@ -1,3 +1,7 @@
 checkpoints
 output*
+data/*
+!data/eigenvals.npy
 *.pyc
+*.swp
+*.log
