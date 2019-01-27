@@ -117,7 +117,7 @@ class AttentionLSTM(ModelBase):
         dataset_args = {}
         dataset_args['num_classes'] = self.cfg.MODEL.class_num
         dataset_args['batch_size'] = self.get_config_from_sec(self.mode, 'batch_size')
-        dataset_args['list'] = self.get_config_from_sec(self.mode, 'list')
+        dataset_args['list'] = self.get_config_from_sec(self.mode, 'filelist')
         # dataset_args['eigen_file'] = self.eigen_file
         return dataset_args
         

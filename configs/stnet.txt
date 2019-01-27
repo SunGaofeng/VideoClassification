@@ -29,7 +29,7 @@ target_size = 224
 num_reader_threads = 12
 buf_size = 1024
 batch_size = 128
-list = "./data/outpkllist"
+filelist = "./data/outpkllist"
 
 [TEST]
 short_size = 256
@@ -37,7 +37,7 @@ target_size = 224
 num_reader_threads = 12
 buf_size = 1024
 batch_size = 128
-list = "./data/outpkllist"
+filelist = "./data/outpkllist"
 
 [INFER]
 short_size = 256
@@ -45,5 +45,5 @@ target_size = 224
 num_reader_threads = 12
 buf_size = 1024
 batch_size = 128
-list = "./data/outpkllist"
+filelist = "./data/outpkllist"
 

@@ -17,6 +17,10 @@ import time
 import logging
 import argparse
 import numpy as np
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import paddle.fluid as fluid
 
 import models
@@ -41,6 +45,10 @@ def parse_args():
                         help='path to inferenece data file lists file.')
     parser.add_argument('--log-interval', type=int, default=1,
                         help='mini-batch interval to log.')
+    parser.add_argument('--infer-topk', type=int, default=20,
+                        help='topk predictions to restore.')
+    parser.add_argument('--save-dir', type=str, default='./',
+                        help='directory to store results')
     args = parser.parse_args()
     return args
 
@@ -69,34 +77,44 @@ def infer(infer_model, args):
     fluid.io.load_vars(exe, weights, predicate=if_exist)
 
     infer_feeder = fluid.DataFeeder(place=place, feed_list=infer_feeds)
-    fetch_list = [infer_feeds[-1].name] + [x.name for x in infer_outputs]
+    fetch_list = [x.name for x in infer_outputs]
 
     def _infer_loop():
         periods = []
+        results = []
         cur_time = time.time()
         for infer_iter, data in enumerate(infer_reader()):
-            infer_outs = exe.run(fetch_list=fetch_list, feed=infer_feeder.feed(data))
+            data_feed_in = [items[:-1] for items in data]
+            video_id = [items[-1] for items in data]
+            infer_outs = exe.run(fetch_list=fetch_list, feed=infer_feeder.feed(data_feed_in))
+            predictions = np.array(infer_outs[0])
+            for i in range(len(predictions)):
+                results.append((video_id[i], predictions[i].argsort()[0-args.infer_topk:].tolist()))
             prev_time = cur_time
             cur_time = time.time()
             period = cur_time - prev_time
             periods.append(period)
+            logger.info('Processed {} samples'.format((infer_iter) * len(predictions)))
+            if infer_iter > 100:
+                break
 
-            video_id = np.array(infer_outs[0])
-            pred = np.array(infer_outs[1])
-            label = np.array(infer_outs[2])
-            # print result here
-            # print_label(video_id, label)
-            print("niconiconi")
         logger.info('[INFER] infer finished. average time: {}'.format(np.mean(periods)))
+        return results
+        
 
     # start infer loop
-    _infer_loop()
+    infer_results = _infer_loop()
+    if not  os.path.isdir(args.save_dir):
+        os.mkdir(args.save_dir)
+    result_file_name = os.path.join(args.save_dir, "{}_infer_result".format(args.model_name))
+    pickle.dump(infer_results, open(result_file_name, 'w'))
 
-    
+
 if __name__ == "__main__":
     args = parse_args()
     logger.info(args)
     
     infer_model = models.get_model(args.model_name, args.config, 'infer')
+    infer_model.merge_configs('INFER', vars(args))
     infer(infer_model, args)
 

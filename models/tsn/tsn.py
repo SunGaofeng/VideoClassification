@@ -47,7 +47,7 @@ class TSN(ModelBase):
         self.num_reader_threads = self.get_config_from_sec(self.mode, 'num_reader_threads')
         self.buf_size = self.get_config_from_sec(self.mode, 'buf_size')
         self.batch_size = self.get_config_from_sec(self.mode, 'batch_size')
-        self.filelist = self.get_config_from_sec(self.mode, 'list')
+        self.filelist = self.get_config_from_sec(self.mode, 'filelist')
 
 
     def build_input(self, use_pyreader = True):
@@ -56,17 +56,24 @@ class TSN(ModelBase):
         image_shape = [self.seg_num] + image_shape
         self.use_pyreader = use_pyreader
         if use_pyreader:
-            py_reader = fluid.layers.py_reader(
+            if self.mode == 'infer':
+                assert (not use_pyreader), \
+                        'pyreader is not recommendated when infer, please set use_pyreader to be false.'
+            else:
+                py_reader = fluid.layers.py_reader(
                            capacity = 100,
                            shapes = [[-1] + image_shape, [-1] + [1]],
                            dtypes = ['float32', 'int64'],
                            name = 'train_py_reader' if self.is_training else 'test_py_reader',
                            use_double_buffer = True)
-            image, label = fluid.layers.read_file(py_reader)
-            self.py_reader = py_reader
+                image, label = fluid.layers.read_file(py_reader)
+                self.py_reader = py_reader
         else:
             image = fluid.layers.data(name='image', shape=image_shape, dtype='float32')
-            label = fluid.layers.data(name='label', shape=[1], dtype='int64')
+            if self.mode != 'infer':
+                label = fluid.layers.data(name='label', shape=[1], dtype='int64')
+            else:
+                label = None
         self.feature_input = [image]
         self.label_input = label
 
@@ -115,7 +122,7 @@ class TSN(ModelBase):
 
 
     def feeds(self):
-        return self.feature_input + [self.label_input]
+        return self.feature_input if self.mode == 'infer' else self.feature_input + [self.label_input]
 
 
     def weights_info(self):

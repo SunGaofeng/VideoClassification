@@ -20,12 +20,17 @@ l2_penalty = 1e-5
 gradient_clip_norm = 1.0
 num_gpus = 4
 batch_size = 40
-list = "./data/outlist"
+filelist = "./data/outlist"
 
 [VALID]
 batch_size = 40
-list = "./data/outlist"
+filelist = "./data/outlist"
 
 [TEST]
 batch_size = 40
-list = "./data/outlist"
+filelist = "./data/outlist"
+
+[INFER]
+batch_size = 40
+filelist = "./data/outlist"
+

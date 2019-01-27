@@ -52,7 +52,7 @@ class NEXTVLAD(ModelBase):
 
         # other params
         self.batch_size = self.get_config_from_sec(self.mode, 'batch_size')
-        self.list = self.get_config_from_sec(self.mode, 'list')
+        self.list = self.get_config_from_sec(self.mode, 'filelist')
 
 
     def build_input(self, use_pyreader = True):
@@ -60,23 +60,30 @@ class NEXTVLAD(ModelBase):
         audio_shape = [self.audio_feature_size]
         label_shape = [self.num_classes]
         if use_pyreader:
-            py_reader = fluid.layers.py_reader(
+            if self.mode == 'infer':
+                assert (not use_pyreader), \
+                        'pyreader is not recommendated when infer, please set use_pyreader to be false.'
+            else:
+                py_reader = fluid.layers.py_reader(
                            capacity = 100,
                            shapes = [[-1] + rgb_shape, [-1] + audio_shape, [-1] + label_shape],
                            lod_levels = [1, 1, 0],
                            dtypes = ['float32', 'float32', 'float32'],
                            name = 'train_py_reader' if self.is_training else 'test_py_reader',
                            use_double_buffer = True)
-            rgb, audio, label = fluid.layers.read_file(py_reader)
-            self.feature_input = [rgb, audio]
-            self.label_input = label
-            self.py_reader = py_reader
+                rgb, audio, label = fluid.layers.read_file(py_reader)
+                self.feature_input = [rgb, audio]
+                self.label_input = label
+                self.py_reader = py_reader
         else:
-            rgb = fluid.layers.data(name='train_rgb' if self.is_training else 'test_rgb', 
+            rgb = fluid.layers.data(name='train_rgb' if self.is_training else 'test_rgb',
                                     shape=rgb_shape, dtype='float32', lod_level=1)
-            audio = fluid.layers.data(name='train_audio' if self.is_training else 'test_audio', 
+            audio = fluid.layers.data(name='train_audio' if self.is_training else 'test_audio',
                                     shape=audio_shape, dtype='float32', lod_level=1)
-            label = fluid.layers.data(name='train_label' if self.is_training else 'test_label', 
+            if self.mode == 'infer':
+                label = None
+            else:
+                label = fluid.layers.data(name='train_label' if self.is_training else 'test_label', 
                                       shape=label_shape, dtype='float32')
             self.feature_input = [rgb, audio]
             self.label_input = label
@@ -124,7 +131,7 @@ class NEXTVLAD(ModelBase):
         return self.network_outputs
 
     def feeds(self):
-        return self.feature_input + [self.label_input]
+        return self.feature_input if self.mode == 'infer' else self.feature_input + [self.label_input]
 
     def weights_info(self):
         #return ("imagenet_resnet50_fusebn", "http://paddlemodels.bj.bcebos.com/faster_rcnn/imagenet_resnet50_fusebn.tar.gz")

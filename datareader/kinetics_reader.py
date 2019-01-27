@@ -119,6 +119,7 @@ def _reader_creator(pickle_list,
 def decode_mp4(sample, phase, seg_num, seglen, short_size, target_size, img_mean, img_std):
     sample = sample[0].split(' ')
     mp4_path = sample[0]
+    # when infer, we store vid as label
     label = int(sample[1])
     imgs = mp4_loader(mp4_path, seg_num, seglen, phase)
     imgs = group_scale(imgs, short_size)

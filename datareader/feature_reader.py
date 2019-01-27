@@ -74,7 +74,7 @@ class FeatureReader(DataReader):
                     if self.phase != 'infer':
                         batch_out.append((rgb, audio, one_hot_label))
                     else:
-                        batch_out.append((rgb, audio))
+                        batch_out.append((rgb, audio, video))
                     if len(batch_out) == self.batch_size:
                         yield batch_out
                         batch_out = []
