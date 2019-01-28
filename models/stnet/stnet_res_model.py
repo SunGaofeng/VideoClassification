@@ -6,10 +6,11 @@ import math
 
 
 class StNet_ResNet():
-    def __init__(self, layers=50, seg_num=7, seglen=5):
+    def __init__(self, layers=50, seg_num=7, seglen=5, is_training = True):
         self.layers = layers
         self.seglen = seglen
         self.seg_num = seg_num
+        self.is_training = is_training
 
     def temporal_conv_bn(self,
                       input,  #(B*seg_num, c, h, w)
@@ -31,7 +32,7 @@ class StNet_ResNet():
             param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.MSRAInitializer()),
             bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0.0)))
 
-        out = fluid.layers.batch_norm(input=conv,act=None,
+        out = fluid.layers.batch_norm(input=conv,act=None, is_test = (not self.is_training),
                   param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=1.0)),
                   bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0.0)))
         out = out + in_transpose
@@ -40,7 +41,7 @@ class StNet_ResNet():
         return out
 
     def xception(self, input):  #(B, C, seg_num,1)
-        bn = fluid.layers.batch_norm(input=input, act=None, name="xception_bn",
+        bn = fluid.layers.batch_norm(input=input, act=None, name="xception_bn", is_test = (not self.is_training),
                 param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=1.0)),
                 bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0.0)))
         att_conv = fluid.layers.conv2d(input=bn, num_filters=2048, filter_size=[3,1], stride=[1,1],
@@ -50,7 +51,7 @@ class StNet_ResNet():
         att_2 = fluid.layers.conv2d(input=att_conv,num_filters=1024,filter_size=[1,1], stride=[1,1],name="xception_att_2",
                 param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.MSRAInitializer()),
                 bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0)))
-        bndw = fluid.layers.batch_norm(input=att_2, act="relu", name="xception_bndw",
+        bndw = fluid.layers.batch_norm(input=att_2, act="relu", name="xception_bndw", is_test = (not self.is_training),
                 param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=1.0)),
                 bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0.0)))
         att1 = fluid.layers.conv2d(input=bndw, num_filters=1024, filter_size=[3,1], stride=[1,1],
@@ -64,7 +65,7 @@ class StNet_ResNet():
                 param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.MSRAInitializer()),
                 bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0)))
         add_to = dw + att1_2
-        bn2 = fluid.layers.batch_norm(input=add_to, act=None, name='xception_bn2',
+        bn2 = fluid.layers.batch_norm(input=add_to, act=None, name='xception_bn2', is_test = (not self.is_training),
                 param_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=1.0)),
                 bias_attr=fluid.param_attr.ParamAttr(initializer=fluid.initializer.ConstantInitializer(value=0.0))
                 )
@@ -95,7 +96,7 @@ class StNet_ResNet():
             bn_name = "bn_" + name
         else:
             bn_name = "bn" + name[3:]
-        return fluid.layers.batch_norm(input=conv, act=act,
+        return fluid.layers.batch_norm(input=conv, act=act, is_test = (not self.is_training),
                                        #name=bn_name+'.output.1',
                                        param_attr=fluid.param_attr.ParamAttr(name=bn_name+"_scale"),
                                        bias_attr=fluid.param_attr.ParamAttr(bn_name+'_offset'),

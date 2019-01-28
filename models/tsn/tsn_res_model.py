@@ -8,9 +8,10 @@ import logging
 logger = logging.getLogger(__name__)
 
 class TSN_ResNet():
-    def __init__(self, layers=50, seg_num=7):
+    def __init__(self, layers=50, seg_num=7, is_training = True):
         self.layers = layers
         self.seg_num = seg_num
+        self.is_training = is_training
 
     def conv_bn_layer(self,
                       input,
@@ -35,7 +36,7 @@ class TSN_ResNet():
         else:
             bn_name = "bn" + name[3:]
 
-        return fluid.layers.batch_norm(input=conv, act=act,
+        return fluid.layers.batch_norm(input=conv, act=act, is_test = (not self.is_training),
                                        param_attr=fluid.param_attr.ParamAttr(name=bn_name+"_scale"),
                                        bias_attr=fluid.param_attr.ParamAttr(bn_name+'_offset'),
                                        moving_mean_name=bn_name+"_mean",

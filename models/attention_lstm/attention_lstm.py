@@ -43,7 +43,7 @@ class AttentionLSTM(ModelBase):
             self.learning_rate = self.get_config_from_sec('train', 'learning_rate', 1e-3)
             self.weight_decay = self.get_config_from_sec('train', 'weight_decay', 8e-4)
             self.num_samples = self.get_config_from_sec('train', 'num_samples', 5000000)
-            self.decay_epochs = self.get_config_from_sec('traon', 'decay_epochs', [5])
+            self.decay_epochs = self.get_config_from_sec('train', 'decay_epochs', [5])
             self.decay_gamma = self.get_config_from_sec('train', 'decay_gamma', 0.1)
 
     def build_input(self, use_pyreader):
@@ -68,14 +68,16 @@ class AttentionLSTM(ModelBase):
             self.feature_input = []
             for name, dim in zip(self.feature_names, self.feature_dims):
                 self.feature_input.append(fluid.layers.data(shape=[dim], lod_level=1, dtype='float32', name=name))
-            self.label_input = fluid.layers.data(shape=[self.class_num], dtype='float32', name='label')
-            self.video_id = fluid.layers.data(shape=[1], dtype='int32', name='video_id')
+            if self.mode == 'infer':
+                self.label_input = None
+            else:
+                self.label_input = fluid.layers.data(shape=[self.class_num], dtype='float32', name='label')
         
     def build_model(self):
         att_outs = []
         for i, (input_dim, feature) in enumerate(zip(self.feature_dims, self.feature_input)):
             att = LSTMAttentionModel(input_dim, self.embedding_size, self.lstm_size)
-            att_out = att.forward(feature)
+            att_out = att.forward(feature, is_training = (self.mode == 'train'))
             att_outs.append(att_out)
         out = fluid.layers.concat(att_outs, axis=1)
 
@@ -98,7 +100,7 @@ class AttentionLSTM(ModelBase):
         decay_epochs = self.decay_epochs
         decay_gamma = self.decay_gamma
         values = [self.learning_rate * (self.decay_gamma ** i) for i in range(len(self.decay_epochs) + 1)]
-        iter_per_epoch = self.num_samples / (self.batch_size * self.gpu_num)
+        iter_per_epoch = self.num_samples / self.batch_size
         boundaries = [e * iter_per_epoch for e in self.decay_epochs]
         return fluid.optimizer.RMSProp(
                 learning_rate=fluid.layers.piecewise_decay(values=values, boundaries=boundaries),
@@ -116,10 +118,7 @@ class AttentionLSTM(ModelBase):
         return [self.output, self.logit]
 
     def feeds(self):
-        if self.mode == 'infer':
-            return self.feature_input + [self.video_id]
-        else:
-            return self.feature_input + [self.label_input]
+        return self.feature_input if self.mode == 'infer' else self.feature_input + [self.label_input]
 
     def weights_info(self):
         return (None, None)

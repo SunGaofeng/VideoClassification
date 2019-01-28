@@ -10,7 +10,7 @@ class LSTMAttentionModel(object):
         self.bias_attr = ParamAttr(regularizer=fluid.regularizer.L2Decay(0.0),
                 initializer=fluid.initializer.NormalInitializer(scale=0.0))
 
-    def forward(self, input):
+    def forward(self, input, is_training):
         input_fc = fluid.layers.fc(input=input, size=self.embedding_size, act='tanh',
                               bias_attr=ParamAttr(regularizer=fluid.regularizer.L2Decay(0.0),
                                                   initializer=fluid.initializer.NormalInitializer(scale=0.0)))
@@ -29,7 +29,7 @@ class LSTMAttentionModel(object):
 
         lstm_concat = fluid.layers.concat(input=[lstm_forward, lstm_backward], axis=1)
 
-        lstm_dropout = fluid.layers.dropout(x=lstm_concat, dropout_prob=0.5)
+        lstm_dropout = fluid.layers.dropout(x=lstm_concat, dropout_prob=0.5, is_test = (not is_training))
 
         lstm_weight = fluid.layers.fc(input=lstm_dropout, size=1, act='sequence_softmax', 
                               bias_attr=ParamAttr(regularizer=fluid.regularizer.L2Decay(0.0),

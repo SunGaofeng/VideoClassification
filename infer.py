@@ -94,8 +94,6 @@ def infer(infer_model, args):
             period = cur_time - prev_time
             periods.append(period)
             logger.info('Processed {} samples'.format((infer_iter) * len(predictions)))
-            if infer_iter > 100:
-                break
 
         logger.info('[INFER] infer finished. average time: {}'.format(np.mean(periods)))
         return results

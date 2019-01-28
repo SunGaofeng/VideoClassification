@@ -35,7 +35,7 @@ def parse_args():
     parser.add_argument('--config', type=str, default='configs/attention_cluster.txt',
                         help='path to config file of model')
     parser.add_argument('--batch-size', type=int, default=None,
-                        help='traing batch size per GPU. None to use config file setting.')
+                        help='training batch size. None to use config file setting.')
     parser.add_argument('--learning-rate', type=float, default=None,
                         help='learning rate use for training. None to use config file setting.')
     parser.add_argument('--use-gpu', type=bool, default=True,

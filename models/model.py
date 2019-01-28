@@ -234,4 +234,4 @@ if __name__ == "__main__":
     print(m.get_train_config('batch_size'))
     m.build_model()
     m = model_zoo.get('test2', './config.txt')
-        
+

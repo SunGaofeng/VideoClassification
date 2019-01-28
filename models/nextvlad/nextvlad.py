@@ -41,7 +41,7 @@ class NEXTVLAD(ModelBase):
         self.gating_reduction = self.get_config_from_sec('model', 'gating_reduction')
         self.eigen_file = self.get_config_from_sec('model', 'eigen_file')
         # training params
-        self.base_learning_rate = self.get_config_from_sec('train', 'base_learning_rate')
+        self.base_learning_rate = self.get_config_from_sec('train', 'learning_rate')
         self.lr_boundary_examples = self.get_config_from_sec('train', 'lr_boundary_examples')
         self.max_iter = self.get_config_from_sec('train', 'max_iter')
         self.learning_rate_decay = self.get_config_from_sec('train', 'learning_rate_decay')
@@ -60,21 +60,17 @@ class NEXTVLAD(ModelBase):
         audio_shape = [self.audio_feature_size]
         label_shape = [self.num_classes]
         if use_pyreader:
-            if self.mode == 'infer':
-                assert (not use_pyreader), \
-                        'pyreader is not recommendated when infer, please set use_pyreader to be false.'
-            else:
-                py_reader = fluid.layers.py_reader(
+            assert self.mode != 'infer', \
+                      'pyreader is not recommendated when infer, please set use_pyreader to be false.'
+            py_reader = fluid.layers.py_reader(
                            capacity = 100,
                            shapes = [[-1] + rgb_shape, [-1] + audio_shape, [-1] + label_shape],
                            lod_levels = [1, 1, 0],
                            dtypes = ['float32', 'float32', 'float32'],
                            name = 'train_py_reader' if self.is_training else 'test_py_reader',
                            use_double_buffer = True)
-                rgb, audio, label = fluid.layers.read_file(py_reader)
-                self.feature_input = [rgb, audio]
-                self.label_input = label
-                self.py_reader = py_reader
+            rgb, audio, label = fluid.layers.read_file(py_reader)
+            self.py_reader = py_reader
         else:
             rgb = fluid.layers.data(name='train_rgb' if self.is_training else 'test_rgb',
                                     shape=rgb_shape, dtype='float32', lod_level=1)
@@ -85,8 +81,8 @@ class NEXTVLAD(ModelBase):
             else:
                 label = fluid.layers.data(name='train_label' if self.is_training else 'test_label', 
                                       shape=label_shape, dtype='float32')
-            self.feature_input = [rgb, audio]
-            self.label_input = label
+        self.feature_input = [rgb, audio]
+        self.label_input = label
 
     def create_model_args(self):
         model_args = {}
@@ -112,6 +108,7 @@ class NEXTVLAD(ModelBase):
 
 
     def optimizer(self):
+        assert self.mode == 'train', "optimizer only can be get in train mode"
         im_per_batch = self.batch_size
         lr_bounds, lr_values = get_learning_rate_decay_list(self.base_learning_rate, self.learning_rate_decay,
                                self.max_iter, self.lr_boundary_examples, im_per_batch)
@@ -119,6 +116,7 @@ class NEXTVLAD(ModelBase):
                                               boundaries = lr_bounds, values = lr_values))
 
     def loss(self):
+        assert self.mode != 'infer', "invalid loss calculationg in infer mode"
         cost = fluid.layers.sigmoid_cross_entropy_with_logits(x = self.logits, label = self.label_input)
         cost = fluid.layers.reduce_sum(cost, dim = -1)
         self.loss_ = fluid.layers.mean(x = cost)
@@ -130,9 +128,6 @@ class NEXTVLAD(ModelBase):
     def feeds(self):
         return self.feature_input if self.mode == 'infer' else self.feature_input + [self.label_input]
 
-    def weights_info(self):
-        #return ("imagenet_resnet50_fusebn", "http://paddlemodels.bj.bcebos.com/faster_rcnn/imagenet_resnet50_fusebn.tar.gz")
-        pass
 
     def create_dataset_args(self):
         dataset_args = {}

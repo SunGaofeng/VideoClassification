@@ -67,8 +67,10 @@ class AttentionCluster(ModelBase):
             self.feature_input = []
             for name, dim in zip(self.feature_names, self.feature_dims):
                 self.feature_input.append(fluid.layers.data(shape=[self.seg_num, dim], dtype='float32', name=name))
-            self.label_input = fluid.layers.data(shape=[self.class_num], dtype='float32', name='label')
-            self.video_id = fluid.layers.data(shape=[1], dtype='int32', name='video_id')
+            if self.mode == 'infer':
+                self.label_input = None
+            else:
+                self.label_input = fluid.layers.data(shape=[self.class_num], dtype='float32', name='label')
         
     def build_model(self):
         att_outs = []
@@ -79,7 +81,7 @@ class AttentionCluster(ModelBase):
         out = fluid.layers.concat(att_outs, axis=1)
 
         if self.drop_rate > 0.:
-          out = fluid.layers.dropout(out, self.drop_rate, is_test=(not self.is_training))
+            out = fluid.layers.dropout(out, self.drop_rate, is_test=(not self.is_training))
 
         fc1 = fluid.layers.fc(out, size=1024, act='tanh',
                               param_attr=ParamAttr(name="fc1.weights",
@@ -114,10 +116,7 @@ class AttentionCluster(ModelBase):
         return [self.output, self.logit]
 
     def feeds(self):
-        if self.mode == 'infer':
-            return self.feature_input + [self.video_id]
-        else:
-            return self.feature_input + [self.label_input]
+        return self.feature_input if self.mode == 'infer' else self.feature_input + [self.label_input]
 
     def weights_info(self):
         return ("attention_cluster_youtube8m", 

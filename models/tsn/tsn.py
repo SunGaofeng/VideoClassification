@@ -37,7 +37,7 @@ class TSN(ModelBase):
 
         self.num_epochs = self.get_config_from_sec('train', 'epoch')
         self.total_videos = self.get_config_from_sec('train', 'total_videos')
-        self.base_learning_rate = self.get_config_from_sec('train', 'base_learning_rate')
+        self.base_learning_rate = self.get_config_from_sec('train', 'learning_rate')
         self.learning_rate_decay = self.get_config_from_sec('train', 'learning_rate_decay')
         self.l2_weight_decay = self.get_config_from_sec('train', 'l2_weight_decay')
         self.momentum = self.get_config_from_sec('train', 'momentum')
@@ -58,18 +58,16 @@ class TSN(ModelBase):
         image_shape = [self.seg_num] + image_shape
         self.use_pyreader = use_pyreader
         if use_pyreader:
-            if self.mode == 'infer':
-                assert (not use_pyreader), \
+            assert self.mode != 'infer', \
                         'pyreader is not recommendated when infer, please set use_pyreader to be false.'
-            else:
-                py_reader = fluid.layers.py_reader(
+            py_reader = fluid.layers.py_reader(
                            capacity = 100,
                            shapes = [[-1] + image_shape, [-1] + [1]],
                            dtypes = ['float32', 'int64'],
                            name = 'train_py_reader' if self.is_training else 'test_py_reader',
                            use_double_buffer = True)
-                image, label = fluid.layers.read_file(py_reader)
-                self.py_reader = py_reader
+            image, label = fluid.layers.read_file(py_reader)
+            self.py_reader = py_reader
         else:
             image = fluid.layers.data(name='image', shape=image_shape, dtype='float32')
             if self.mode != 'infer':
@@ -88,12 +86,13 @@ class TSN(ModelBase):
 
     def build_model(self):
         cfg = self.create_model_args()
-        videomodel = TSN_ResNet(layers=cfg['layers'], seg_num=cfg['seg_num'])
+        videomodel = TSN_ResNet(layers=cfg['layers'], seg_num=cfg['seg_num'], is_training = (self.mode == 'train'))
         out = videomodel.net(input = self.feature_input[0], class_dim = cfg['class_dim'])
         self.network_outputs = [out]
 
 
     def optimizer(self):
+        assert self.mode == 'train', "optimizer only can be get in train mode"
         epoch_points = [self.num_epochs / 3, self.num_epochs * 2 / 3]
         total_videos = self.total_videos
         step = int(total_videos / self.batch_size + 1)
@@ -113,6 +112,7 @@ class TSN(ModelBase):
 
 
     def loss(self):
+        assert self.mode != 'infer', "invalid loss calculationg in infer mode"
         cost = fluid.layers.cross_entropy(input=self.network_outputs[0], \
                            label=self.label_input, ignore_index=-1)
         self.loss_ = fluid.layers.mean(x=cost)
@@ -125,10 +125,6 @@ class TSN(ModelBase):
 
     def feeds(self):
         return self.feature_input if self.mode == 'infer' else self.feature_input + [self.label_input]
-
-
-    def weights_info(self):
-        return None
 
 
     def create_dataset_args(self):
