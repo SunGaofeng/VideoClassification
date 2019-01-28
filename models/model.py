@@ -19,6 +19,7 @@ try:
 except:
   from ConfigParser import ConfigParser
 
+import paddle.fluid as fluid
 from datareader import get_reader
 from  metrics import get_metrics
 import utils
@@ -196,7 +197,7 @@ class ModelBase(object):
         def if_exist(var):
             return os.path.exists(os.path.join(pretrained_base, var.name))
         inference_program = prog.clone(for_test=True)
-        fluid.io.load_vars(exe, pretrained_base, prediccate=if_exist, main_program = inference_program)
+        fluid.io.load_vars(exe, pretrained_base, predicate=if_exist, main_program = inference_program)
 
     def merge_configs(self, sec, cfg_dict):
         return self._config.merge_configs(sec, cfg_dict)

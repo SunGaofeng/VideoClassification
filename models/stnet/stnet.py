@@ -40,6 +40,8 @@ class STNET(ModelBase):
         self.learning_rate_decay = self.get_config_from_sec('train', 'learning_rate_decay')
         self.l2_weight_decay = self.get_config_from_sec('train', 'l2_weight_decay')
         self.momentum = self.get_config_from_sec('train', 'momentum')
+        self.use_gpu = (not self.get_config_from_sec('train', 'use_cpu'))
+        self.num_gpus = self.get_config_from_sec('train', 'num_gpus')
 
         self.short_size = self.get_config_from_sec(self.mode, 'short_size')
         self.target_size = self.get_config_from_sec(self.mode, 'target_size')
@@ -142,7 +144,10 @@ class STNET(ModelBase):
         cfg['image_mean'] = self.image_mean
         cfg['image_std'] = self.image_std
         cfg['list'] = self.filelist
-        cfg['batch_size'] = self.batch_size
+        if (self.use_gpu) and (self.py_reader is not None):
+            cfg['batch_size'] = int(self.batch_size / self.num_gpus)
+        else:
+            cfg['batch_size'] = self.batch_size
 
         return cfg
 

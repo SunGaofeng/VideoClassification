@@ -112,10 +112,7 @@ class NEXTVLAD(ModelBase):
 
 
     def optimizer(self):
-        if self.use_gpu and self.num_gpus > 1:
-            im_per_batch = self.batch_size * self.num_gpus
-        else:
-            im_per_batch = self.batch_size
+        im_per_batch = self.batch_size
         lr_bounds, lr_values = get_learning_rate_decay_list(self.base_learning_rate, self.learning_rate_decay,
                                self.max_iter, self.lr_boundary_examples, im_per_batch)
         return fluid.optimizer.AdamOptimizer(learning_rate=fluid.layers.piecewise_decay(
@@ -140,7 +137,10 @@ class NEXTVLAD(ModelBase):
     def create_dataset_args(self):
         dataset_args = {}
         dataset_args['num_classes'] = self.num_classes
-        dataset_args['batch_size'] = self.batch_size
+        if self.use_gpu and (self.py_reader is not None):
+            dataset_args['batch_size'] = int(self.batch_size / self.num_gpus)
+        else:
+            dataset_args['batch_size'] = self.batch_size
         dataset_args['list'] = self.list
         dataset_args['eigen_file'] = self.eigen_file
         return dataset_args

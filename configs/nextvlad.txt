@@ -19,11 +19,12 @@ learning_rate_decay = 0.8
 l2_penalty = 1e-5
 gradient_clip_norm = 1.0
 num_gpus = 4
-batch_size = 40
+batch_size = 160
 filelist = "./data/outlist"
+pretrain_base = "/home/sungaofeng/programs/nextvlad/dev_paddle/save/model_epoch4_end"
 
 [VALID]
-batch_size = 40
+batch_size = 160
 filelist = "./data/outlist"
 
 [TEST]

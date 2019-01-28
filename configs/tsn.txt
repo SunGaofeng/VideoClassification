@@ -14,6 +14,7 @@ target_size = 224
 num_reader_threads = 12
 buf_size = 1024
 batch_size = 256
+num_gpus = 8
 filelist = "./data/outpkllist"
 base_learning_rate = 0.01
 learning_rate_decay = 0.1
@@ -35,7 +36,7 @@ short_size = 256
 target_size = 224
 num_reader_threads = 12
 buf_size = 1024
-batch_size = 256
+batch_size = 32
 list = "./data/outpkllist"
 
 [INFER]
@@ -43,6 +44,6 @@ short_size = 256
 target_size = 224
 num_reader_threads = 12
 buf_size = 1024
-batch_size = 256
+batch_size = 32
 filelist = "./data/outpkllist"
 
