@@ -67,7 +67,6 @@ def infer(infer_model, args):
         logger.error("[INFER] --filelist unset.")
         return
     assert os.path.exists(args.filelist), "{} not exist.".format(args.filelist)
-    # infer_reader = infer_model.reader(args.filelist)
     infer_reader = infer_model.reader()
 
     # if no weight files specified, download weights from paddle
