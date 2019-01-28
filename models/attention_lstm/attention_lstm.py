@@ -97,8 +97,6 @@ class AttentionLSTM(ModelBase):
 
     def optimizer(self):
         assert self.mode == 'train', "optimizer only can be get in train mode"
-        decay_epochs = self.decay_epochs
-        decay_gamma = self.decay_gamma
         values = [self.learning_rate * (self.decay_gamma ** i) for i in range(len(self.decay_epochs) + 1)]
         iter_per_epoch = self.num_samples / self.batch_size
         boundaries = [e * iter_per_epoch for e in self.decay_epochs]
@@ -112,7 +110,7 @@ class AttentionLSTM(ModelBase):
         cost = fluid.layers.sigmoid_cross_entropy_with_logits(x=self.logit, label=self.label_input)
         cost = fluid.layers.reduce_sum(cost, dim=-1)
         sum_cost = fluid.layers.reduce_sum(cost)
-        self.loss_ = fluid.layers.scale(avg_cost, scale=gpu_nums, bias_after_scale=False)
+        self.loss_ = fluid.layers.scale(sum_cost, scale=self.gpu_num, bias_after_scale=False)
         return self.loss_
 
     def outputs(self):
