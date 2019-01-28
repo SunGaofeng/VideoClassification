@@ -173,12 +173,9 @@ class ModelBase(object):
         "get train epoch num"
         return self.cfg.TRAIN.epoch
 
-    def pretrain_base(self):
+    def pretrain_info(self):
         "get pretrain base model directory"
-        if 'pretrain_base' in self.cfg.TRAIN.keys():
-            return self.cfg.TRAIN.pretrain_base
-        else:
-            return None
+        return (None, None)
 
     def get_pretrain_weights(self, logger=None):
         "get model weight file path, download weight from Paddle if not exist"

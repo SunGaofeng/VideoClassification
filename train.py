@@ -103,7 +103,7 @@ def train(train_model, valid_model, args):
     exe.run(train_startup)
     exe.run(valid_startup)
 
-    pretrain_base = train_model.pretrain_base()
+    pretrain_base = train_model.get_pretrain_weights()
     if pretrain_base:
         train_model.load_pretrained_params(exe, pretrain_base, train_prog, place)
 
