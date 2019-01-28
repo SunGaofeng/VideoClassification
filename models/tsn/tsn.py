@@ -35,7 +35,7 @@ class TSN(ModelBase):
         self.image_std = self.get_config_from_sec('model', 'image_std')
         self.num_layers = self.get_config_from_sec('model', 'num_layers')
 
-        self.num_epochs = self.get_config_from_sec('train', 'num_epochs')
+        self.num_epochs = self.get_config_from_sec('train', 'epoch')
         self.total_videos = self.get_config_from_sec('train', 'total_videos')
         self.base_learning_rate = self.get_config_from_sec('train', 'base_learning_rate')
         self.learning_rate_decay = self.get_config_from_sec('train', 'learning_rate_decay')
