@@ -33,8 +33,8 @@ def parse_args():
                         help='path to config file of model')
     parser.add_argument('--batch-size', type=int, default=None,
                         help='traing batch size per GPU. None to use config file setting.')
-    parser.add_argument('--use-cpu', action='store_true', default=False,
-                        help='default use gpu, set this to use cpu')
+    parser.add_argument('--use-gpu', type=bool, default=True,
+                        help='default use gpu.')
     parser.add_argument('--weights', type=str, default=None,
                         help='weight path, None to use weights from Paddle.')
     parser.add_argument('--log-interval', type=int, default=1,
@@ -52,7 +52,7 @@ def test(test_model, args):
     test_metrics = test_model.metrics()
     loss = test_model.loss()
 
-    place = fluid.CPUPlace() if args.use_cpu else fluid.CUDAPlace(0)
+    place = fluid.CUDAPlace(0) if args.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
 
     weights = args.weights or test_model.get_weights()

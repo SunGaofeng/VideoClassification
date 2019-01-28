@@ -26,33 +26,22 @@ class AttentionLSTM(ModelBase):
 
     def build_input(self, use_pyreader):
         if use_pyreader:
+            assert self.mode != 'infer', \
+                'pyreader is not recommendated when infer, please set use_pyreader to be false.'
             shapes = []
             for dim in self.cfg.MODEL.feature_dims:
                 shapes.append([-1, dim])
-            if self.mode == 'infer':
-                shapes.append([-1, 1]) # video id
-                self.py_reader = fluid.layers.py_reader(
-                    capacity = 1024,
-                    shapes = shapes,
-                    lod_levels = [1] * self.cfg.MODEL.feature_num + [0],
-                    dtypes = ['float32'] * self.cfg.MODEL.feature_num + ['int32'],
-                    name = 'train_py_reader' if self.is_training else 'test_py_reader',
-                    use_double_buffer = True)
-                inputs = fluid.layers.read_file(self.py_reader)
-                self.feature_input = inputs[:self.cfg.MODEL.feature_num]
-                self.video_id = inputs[-1]
-            else:
-                shapes.append([-1, self.cfg.MODEL.class_num]) # label
-                self.py_reader = fluid.layers.py_reader(
-                    capacity = 1024,
-                    shapes = shapes,
-                    lod_levels = [1] * self.cfg.MODEL.feature_num + [0],
-                    dtypes = ['float32'] * (self.cfg.MODEL.feature_num + 1),
-                    name = 'train_py_reader' if self.is_training else 'test_py_reader',
-                    use_double_buffer = True)
-                inputs = fluid.layers.read_file(self.py_reader)
-                self.feature_input = inputs[:self.cfg.MODEL.feature_num]
-                self.label_input = inputs[-1]
+            shapes.append([-1, self.cfg.MODEL.class_num]) # label
+            self.py_reader = fluid.layers.py_reader(
+                capacity = 1024,
+                shapes = shapes,
+                lod_levels = [1] * self.cfg.MODEL.feature_num + [0],
+                dtypes = ['float32'] * (self.cfg.MODEL.feature_num + 1),
+                name = 'train_py_reader' if self.is_training else 'test_py_reader',
+                use_double_buffer = True)
+            inputs = fluid.layers.read_file(self.py_reader)
+            self.feature_input = inputs[:self.cfg.MODEL.feature_num]
+            self.label_input = inputs[-1]
         else:
             self.feature_input = []
             for name, dim in zip(self.cfg.MODEL.feature_names, self.cfg.MODEL.feature_dims):
@@ -116,9 +105,16 @@ class AttentionLSTM(ModelBase):
     def create_dataset_args(self):
         dataset_args = {}
         dataset_args['num_classes'] = self.cfg.MODEL.class_num
-        dataset_args['batch_size'] = self.get_config_from_sec(self.mode, 'batch_size')
         dataset_args['list'] = self.get_config_from_sec(self.mode, 'filelist')
-        # dataset_args['eigen_file'] = self.eigen_file
+
+        batch_size = self.get_config_from_sec(self.mode, 'batch_size')
+        use_gpu = self.get_config_from_sec(self.mode, 'use_gpu', False)
+        gpu_num = self.get_config_from_sec(self.mode, 'gpu_num', 1)
+        if use_gpu and self.py_reader:
+            dataset_args['batch_size'] = int(batch_size / gpu_num)
+        else:
+            dataset_args['batch_size'] = batch_size
+
         return dataset_args
         
     def create_metrics_args(self):

@@ -38,8 +38,8 @@ def parse_args():
                         help='traing batch size per GPU. None to use config file setting.')
     parser.add_argument('--learning-rate', type=float, default=None,
                         help='learning rate use for training. None to use config file setting.')
-    parser.add_argument('--use-cpu', action='store_true', default=False,
-                        help='default use gpu, set this to use cpu')
+    parser.add_argument('--use-gpu', type=bool, default=True,
+                        help='default use gpu.')
     parser.add_argument('--no-parallel', action='store_true', default=False,
                         help='whether to use parallel executor')
     parser.add_argument('--no-use-pyreader', action='store_true', default=False,
@@ -98,7 +98,7 @@ def train(train_model, valid_model, args):
             valid_metrics = valid_model.metrics()
             valid_pyreader = valid_model.pyreader()
 
-    place = fluid.CPUPlace() if args.use_cpu else fluid.CUDAPlace(0)
+    place = fluid.CUDAPlace(0) if args.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
     exe.run(train_startup)
     exe.run(valid_startup)
@@ -111,8 +111,8 @@ def train(train_model, valid_model, args):
         train_exe = exe
         valid_exe = exe
     else:
-        train_exe = fluid.ParallelExecutor(use_cuda=(not args.use_cpu), loss_name=train_loss.name, main_program=train_prog)
-        valid_exe = fluid.ParallelExecutor(use_cuda=(not args.use_cpu), share_vars_from=train_exe, main_program=valid_prog)
+        train_exe = fluid.ParallelExecutor(use_cuda=args.use_gpu, loss_name=train_loss.name, main_program=train_prog)
+        valid_exe = fluid.ParallelExecutor(use_cuda=args.use_gpu, share_vars_from=train_exe, main_program=valid_prog)
 
     train_fetch_list = [train_loss.name] + [x.name for x in train_outputs] + [train_feeds[-1].name]
     valid_fetch_list = [valid_loss.name] + [x.name for x in valid_outputs] + [valid_feeds[-1].name]

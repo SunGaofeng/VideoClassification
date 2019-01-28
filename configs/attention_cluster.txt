@@ -14,16 +14,17 @@ class_num = 3862
 epoch = 5
 learning_rate = 0.001
 pretrain_base = None
-batch_size = 40
+batch_size = 160
+use_gpu = True
 gpu_num = 4
 filelist = "data/train.list"
 
 [VALID]
-batch_size = 40
+batch_size = 160
 filelist = "data/train.list"
 
 [TEST]
-batch_size = 40
+batch_size = 160
 filelist = "data/test.list"
 
 [INFER]

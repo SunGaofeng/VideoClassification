@@ -41,7 +41,7 @@ class TSN(ModelBase):
         self.learning_rate_decay = self.get_config_from_sec('train', 'learning_rate_decay')
         self.l2_weight_decay = self.get_config_from_sec('train', 'l2_weight_decay')
         self.momentum = self.get_config_from_sec('train', 'momentum')
-        self.use_gpu = (not self.get_config_from_sec('train', 'use_cpu'))
+        self.use_gpu = self.get_config_from_sec('train', 'use_gpu')
         self.num_gpus = self.get_config_from_sec('train', 'num_gpus')
 
         self.short_size = self.get_config_from_sec(self.mode, 'short_size')

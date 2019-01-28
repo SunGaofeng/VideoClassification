@@ -35,8 +35,8 @@ def parse_args():
                         help='name of model to train.')
     parser.add_argument('--config', type=str, default='configs/attention_cluster.txt',
                         help='path to config file of model')
-    parser.add_argument('--use-cpu', action='store_true', default=False,
-                        help='default use gpu, set this to use cpu')
+    parser.add_argument('--use-gpu', type=bool, default=True,
+                        help='default use gpu.')
     parser.add_argument('--weights', type=str, default=None,
                         help='weight path, None to use weights from Paddle.')
     parser.add_argument('--batch-size', type=int, default=1,
@@ -59,7 +59,7 @@ def infer(infer_model, args):
     infer_feeds = infer_model.feeds()
     infer_outputs = infer_model.outputs()
 
-    place = fluid.CPUPlace() if args.use_cpu else fluid.CUDAPlace(0)
+    place = fluid.CUDAPlace(0) if args.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
 
     # get infer reader

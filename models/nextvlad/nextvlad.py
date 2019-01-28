@@ -47,7 +47,7 @@ class NEXTVLAD(ModelBase):
         self.learning_rate_decay = self.get_config_from_sec('train', 'learning_rate_decay')
         self.l2_penalty = self.get_config_from_sec('train', 'l2_penalty')
         self.gradient_clip_norm = self.get_config_from_sec('train', 'gradient_clip_norm')
-        self.use_gpu = (not self.get_config_from_sec('train', 'use_cpu'))
+        self.use_gpu = self.get_config_from_sec('train', 'use_gpu')
         self.num_gpus = self.get_config_from_sec('train', 'num_gpus')
 
         # other params

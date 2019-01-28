@@ -12,6 +12,7 @@ gating_reduction = 8
 eigen_file = "./data/eigenvals.npy"
 
 [TRAIN]
+epoch = 6
 base_learning_rate = 0.0002
 lr_boundary_examples = 2000000
 max_iter = 700000

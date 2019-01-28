@@ -19,17 +19,18 @@ weight_decay = 0.0008
 num_samples = 5000000
 pretrain_base = None
 batch_size = 40
+use_gpu = True
 gpu_num = 4
-list = "data/train.list"
+filelist = "data/train.list"
 
 [VALID]
 batch_size = 40
-list = "data/test.list"
+filelist = "data/test.list"
 
 [TEST]
 batch_size = 40
-list = "data/train.list"
+filelist = "data/train.list"
 
 [INFER]
 batch_size = 40
-list = "data/train.list"
+filelist = "data/train.list"
