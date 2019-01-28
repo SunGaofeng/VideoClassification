@@ -23,36 +23,58 @@ __all__ = ["AttentionLSTM"]
 class AttentionLSTM(ModelBase):
     def __init__(self, name, cfg, mode='train', args=None):
         super(AttentionLSTM, self).__init__(name, cfg, mode, args=args)
+        self.get_config()
+
+    def get_config(self):
+        # get model configs
+        self.feature_num = self.cfg.MODEL.feature_num
+        self.feature_names = self.cfg.MODEL.feature_names
+        self.feature_dims = self.cfg.MODEL.feature_dims
+        self.class_num = self.cfg.MODEL.class_num
+        self.embedding_size = self.cfg.MODEL.embedding_size
+        self.lstm_size = self.cfg.MODEL.lstm_size
+
+        # get mode configs
+        self.batch_size = self.get_config_from_sec(self.mode, 'batch_size', 1)
+        self.use_gpu = self.get_config_from_sec(self.mode, 'use_gpu', False)
+        self.gpu_num = self.get_config_from_sec(self.mode, 'gpu_num', 1)
+
+        if self.mode == 'train':
+            self.learning_rate = self.get_config_from_sec('train', 'learning_rate', 1e-3)
+            self.weight_decay = self.get_config_from_sec('train', 'weight_decay', 8e-4)
+            self.num_samples = self.get_config_from_sec('train', 'num_samples', 5000000)
+            self.decay_epochs = self.get_config_from_sec('traon', 'decay_epochs', [5])
+            self.decay_gamma = self.get_config_from_sec('train', 'decay_gamma', 0.1)
 
     def build_input(self, use_pyreader):
         if use_pyreader:
             assert self.mode != 'infer', \
                 'pyreader is not recommendated when infer, please set use_pyreader to be false.'
             shapes = []
-            for dim in self.cfg.MODEL.feature_dims:
+            for dim in self.feature_dims:
                 shapes.append([-1, dim])
-            shapes.append([-1, self.cfg.MODEL.class_num]) # label
+            shapes.append([-1, self.class_num]) # label
             self.py_reader = fluid.layers.py_reader(
                 capacity = 1024,
                 shapes = shapes,
-                lod_levels = [1] * self.cfg.MODEL.feature_num + [0],
-                dtypes = ['float32'] * (self.cfg.MODEL.feature_num + 1),
+                lod_levels = [1] * self.feature_num + [0],
+                dtypes = ['float32'] * (self.feature_num + 1),
                 name = 'train_py_reader' if self.is_training else 'test_py_reader',
                 use_double_buffer = True)
             inputs = fluid.layers.read_file(self.py_reader)
-            self.feature_input = inputs[:self.cfg.MODEL.feature_num]
+            self.feature_input = inputs[:self.feature_num]
             self.label_input = inputs[-1]
         else:
             self.feature_input = []
-            for name, dim in zip(self.cfg.MODEL.feature_names, self.cfg.MODEL.feature_dims):
+            for name, dim in zip(self.feature_names, self.feature_dims):
                 self.feature_input.append(fluid.layers.data(shape=[dim], lod_level=1, dtype='float32', name=name))
-            self.label_input = fluid.layers.data(shape=[self.cfg.MODEL.class_num], dtype='float32', name='label')
+            self.label_input = fluid.layers.data(shape=[self.class_num], dtype='float32', name='label')
             self.video_id = fluid.layers.data(shape=[1], dtype='int32', name='video_id')
         
     def build_model(self):
         att_outs = []
-        for i, (input_dim, feature) in enumerate(zip(self.cfg.MODEL.feature_dims, self.feature_input)):
-            att = LSTMAttentionModel(input_dim, self.cfg.MODEL.embedding_size, self.cfg.MODEL.lstm_size)
+        for i, (input_dim, feature) in enumerate(zip(self.feature_dims, self.feature_input)):
+            att = LSTMAttentionModel(input_dim, self.embedding_size, self.lstm_size)
             att_out = att.forward(feature)
             att_outs.append(att_out)
         out = fluid.layers.concat(att_outs, axis=1)
@@ -64,7 +86,7 @@ class AttentionLSTM(ModelBase):
                               bias_attr=ParamAttr(regularizer=fluid.regularizer.L2Decay(0.0),
                                                   initializer=fluid.initializer.NormalInitializer(scale=0.0)))
 
-        self.logit = fluid.layers.fc(input=fc2, size=self.cfg.MODEL.class_num, act=None, \
+        self.logit = fluid.layers.fc(input=fc2, size=self.class_num, act=None, \
                               bias_attr=ParamAttr(regularizer=fluid.regularizer.L2Decay(0.0),
                                                   initializer=fluid.initializer.NormalInitializer(scale=0.0)))
 
@@ -73,15 +95,15 @@ class AttentionLSTM(ModelBase):
 
     def optimizer(self):
         assert self.mode == 'train', "optimizer only can be get in train mode"
-        decay_epochs = self.cfg.TRAIN.decay_epochs
-        decay_gamma = self.cfg.TRAIN.decay_gamma
-        values = [self.cfg.TRAIN.learning_rate * (decay_gamma ** i) for i in range(len(decay_epochs) + 1)]
-        iter_per_epoch = self.cfg.TRAIN.num_samples / (self.cfg.TRAIN.batch_size * self.cfg.TRAIN.gpu_num)
-        boundaries = [e * iter_per_epoch for e in decay_epochs]
+        decay_epochs = self.decay_epochs
+        decay_gamma = self.decay_gamma
+        values = [self.learning_rate * (self.decay_gamma ** i) for i in range(len(self.decay_epochs) + 1)]
+        iter_per_epoch = self.num_samples / (self.batch_size * self.gpu_num)
+        boundaries = [e * iter_per_epoch for e in self.decay_epochs]
         return fluid.optimizer.RMSProp(
                 learning_rate=fluid.layers.piecewise_decay(values=values, boundaries=boundaries),
                 centered=True,
-                regularization=fluid.regularizer.L2Decay(self.cfg.TRAIN.weight_decay))
+                regularization=fluid.regularizer.L2Decay(self.weight_decay))
 
     def loss(self):
         assert self.mode != 'infer', "invalid loss calculationg in infer mode"
@@ -104,22 +126,19 @@ class AttentionLSTM(ModelBase):
     
     def create_dataset_args(self):
         dataset_args = {}
-        dataset_args['num_classes'] = self.cfg.MODEL.class_num
+        dataset_args['num_classes'] = self.class_num
         dataset_args['list'] = self.get_config_from_sec(self.mode, 'filelist')
 
-        batch_size = self.get_config_from_sec(self.mode, 'batch_size')
-        use_gpu = self.get_config_from_sec(self.mode, 'use_gpu', False)
-        gpu_num = self.get_config_from_sec(self.mode, 'gpu_num', 1)
-        if use_gpu and self.py_reader:
-            dataset_args['batch_size'] = int(batch_size / gpu_num)
+        if self.use_gpu and self.py_reader:
+            dataset_args['batch_size'] = int(self.batch_size / self.gpu_num)
         else:
-            dataset_args['batch_size'] = batch_size
+            dataset_args['batch_size'] = self.batch_size
 
         return dataset_args
         
     def create_metrics_args(self):
         metrics_args = {}
-        metrics_args['num_classes'] = self.cfg.MODEL.class_num
+        metrics_args['num_classes'] = self.class_num
         metrics_args['topk'] = 20
         return metrics_args
 
