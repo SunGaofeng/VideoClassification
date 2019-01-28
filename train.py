@@ -145,8 +145,6 @@ if __name__ == "__main__":
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
 
-    train_model = models.get_model(args.model_name, args.config, mode='train')
-    valid_model = models.get_model(args.model_name, args.config, mode='valid')
-    train_model.merge_configs('train', vars(args))
-    valid_model.merge_configs('valid', vars(args))
+    train_model = models.get_model(args.model_name, args.config, mode='train', args=vars(args))
+    valid_model = models.get_model(args.model_name, args.config, mode='valid', args=vars(args))
     train(train_model, valid_model, args)

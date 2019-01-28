@@ -21,9 +21,9 @@ from tsn_res_model import TSN_ResNet
 __all__ = ["TSN"]
 
 class TSN(ModelBase):
-    def __init__(self, name, cfg, mode='train'):
+    def __init__(self, name, cfg, mode='train', args=None):
         super(TSN, self).__init__(
-                name, cfg, mode = mode)
+                name, cfg, mode = mode, args = args)
         self.get_config()
 
     def get_config(self):

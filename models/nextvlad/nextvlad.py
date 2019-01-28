@@ -23,9 +23,9 @@ import nextvlad_model
 __all__ = ["NEXTVLAD"]
 
 class NEXTVLAD(ModelBase):
-    def __init__(self, name, cfg, mode='train'):
+    def __init__(self, name, cfg, mode='train', args=None):
         super(NEXTVLAD, self).__init__(
-                name, cfg, mode = mode)
+                name, cfg, mode = mode, args = args)
         self.get_config()
 
     def get_config(self):

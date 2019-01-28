@@ -89,6 +89,5 @@ def test(test_model, args):
 if __name__ == "__main__":
     args = parse_args()
     
-    test_model = models.get_model(args.model_name, args.config, mode='test')
-    test_model.merge_configs('TEST', vars(args))
+    test_model = models.get_model(args.model_name, args.config, mode='test', args=vars(args))
     test(test_model, args)

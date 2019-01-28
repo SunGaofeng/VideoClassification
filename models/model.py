@@ -93,7 +93,7 @@ class ModelConfig(object):
 
 
 class ModelBase(object):
-    def __init__(self, name, cfg, mode='train'):
+    def __init__(self, name, cfg, mode='train', args=None):
         assert mode in ['train', 'valid', 'test', 'infer'], \
                 "Unknown mode type {}".format(mode)
         self.name = name
@@ -106,6 +106,8 @@ class ModelBase(object):
                 "Config file {} not exists".format(cfg)
         self._config = ModelConfig(cfg)
         self._config.parse()
+        if args and isinstance(args, dict):
+            self._config.merge_configs(mode, args)
         self.cfg = self._config.get_configs()
 
     def build_model(self):
@@ -199,9 +201,6 @@ class ModelBase(object):
         inference_program = prog.clone(for_test=True)
         fluid.io.load_vars(exe, pretrained_base, predicate=if_exist, main_program = inference_program)
 
-    def merge_configs(self, sec, cfg_dict):
-        return self._config.merge_configs(sec, cfg_dict)
-
     def get_config_from_sec(self, sec, item, default=None):
         cfg_item = self._config.get_config_from_sec(sec.upper(), item) or default
         return cfg_item
@@ -215,10 +214,10 @@ class ModelZoo(object):
         assert model.__base__ == ModelBase, "Unknow model type {}".format(type(model))
         self.model_zoo[name] = model
 
-    def get(self, name, cfg, mode='train'):
+    def get(self, name, cfg, mode='train', args=None):
         for k, v in self.model_zoo.items():
             if k == name:
-                return v(name, cfg, mode)
+                return v(name, cfg, mode, args)
         raise ModelNotFoundError(name, self.model_zoo.keys())
 
 # singleton model_zoo
@@ -227,8 +226,8 @@ model_zoo = ModelZoo()
 def regist_model(name, model):
     model_zoo.regist(name, model)
 
-def get_model(name, cfg, mode='train'):
-    return model_zoo.get(name, cfg, mode)
+def get_model(name, cfg, mode='train', args=None):
+    return model_zoo.get(name, cfg, mode, args)
 
 if __name__ == "__main__":
     class TestModel(ModelBase):

@@ -114,7 +114,6 @@ if __name__ == "__main__":
     args = parse_args()
     logger.info(args)
     
-    infer_model = models.get_model(args.model_name, args.config, 'infer')
-    infer_model.merge_configs('INFER', vars(args))
+    infer_model = models.get_model(args.model_name, args.config, mode='infer', args=vars(args))
     infer(infer_model, args)
 

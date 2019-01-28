@@ -21,8 +21,8 @@ from lstm_attention import LSTMAttentionModel
 __all__ = ["AttentionLSTM"]
 
 class AttentionLSTM(ModelBase):
-    def __init__(self, name, cfg, mode='train'):
-        super(AttentionLSTM, self).__init__(name, cfg, mode)
+    def __init__(self, name, cfg, mode='train', args=None):
+        super(AttentionLSTM, self).__init__(name, cfg, mode, args=args)
 
     def build_input(self, use_pyreader):
         if use_pyreader:

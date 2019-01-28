@@ -22,9 +22,9 @@ from logistic_model import LogisticModel
 __all__ = ["AttentionCluster"]
 
 class AttentionCluster(ModelBase):
-    def __init__(self, name, cfg, mode='train'):
+    def __init__(self, name, cfg, mode='train', args=None):
         super(AttentionCluster, self).__init__(
-                name, cfg, mode)
+                name, cfg, mode, args)
 
     def build_input(self, use_pyreader):
         if use_pyreader:
