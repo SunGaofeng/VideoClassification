@@ -13,6 +13,7 @@
 #limitations under the License.
 
 import os
+import sys
 import time
 import logging
 import argparse
@@ -107,7 +108,7 @@ def infer(infer_model, args):
     if not  os.path.isdir(args.save_dir):
         os.mkdir(args.save_dir)
     result_file_name = os.path.join(args.save_dir, "{}_infer_result".format(args.model_name))
-    pickle.dump(infer_results, open(result_file_name, 'w'))
+    pickle.dump(infer_results, open(result_file_name, 'wb'))
 
 
 if __name__ == "__main__":

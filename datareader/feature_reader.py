@@ -1,3 +1,4 @@
+import sys
 from .reader_utils import DataReader
 try:
     import cPickle as pickle
@@ -7,6 +8,8 @@ except ImportError:
     from io import BytesIO
 import numpy as np
 import random
+
+python_ver = sys.version_info
 
 class FeatureReader(DataReader):
     """
@@ -40,19 +43,22 @@ class FeatureReader(DataReader):
         def reader():
             batch_out = []
             for filepath in fl:
-                data = pickle.load(open(filepath))
-                indexes = range(len(data))
+                if python_ver < (3, 0):
+                    data = pickle.load(open(filepath, 'rb'))
+                else:
+                    data = pickle.load(open(filepath, 'rb'), encoding='bytes')
+                indexes = list(range(len(data)))
                 if self.phase == 'train':
                     random.shuffle(indexes)
                 for i in indexes:
                     record = data[i]
-                    nframes = record['nframes']
-                    rgb = record['feature'].astype(float)
-                    audio = record['audio'].astype(float)
+                    nframes = record[b'nframes']
+                    rgb = record[b'feature'].astype(float)
+                    audio = record[b'audio'].astype(float)
                     if self.phase != 'infer':
-                        label = record['label']
+                        label = record[b'label']
                         one_hot_label = make_one_hot(label, self.num_classes)
-                    video = record['video']
+                    video = record[b'video']
 
                     rgb = rgb[0:nframes, :]
                     audio = audio[0:nframes, :]
