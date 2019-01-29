@@ -1,7 +1,7 @@
 import numpy as np
 import paddle
 import paddle.fluid as fluid
-import clf_model
+from . import clf_model
 
 class NeXtVLAD(object):
   """

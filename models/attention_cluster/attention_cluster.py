@@ -16,8 +16,8 @@ import paddle.fluid as fluid
 from paddle.fluid import ParamAttr
 
 from ..model import ModelBase
-from shifting_attention import ShiftingAttentionModel
-from logistic_model import LogisticModel
+from .shifting_attention import ShiftingAttentionModel
+from .logistic_model import LogisticModel
 
 __all__ = ["AttentionCluster"]
 

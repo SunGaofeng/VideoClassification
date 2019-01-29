@@ -7,8 +7,8 @@ import numpy as np
 import cv2
 import logging
 
-import nonlocal_video_io
-from reader_utils import DataReader
+from . import nonlocal_video_io
+from .reader_utils import DataReader
 
 logger = logging.getLogger(__name__)
 

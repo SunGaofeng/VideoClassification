@@ -1,1 +1,1 @@
-from metrics_util import get_metrics
+from .metrics_util import get_metrics

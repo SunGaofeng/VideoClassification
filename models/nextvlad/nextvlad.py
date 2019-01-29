@@ -16,8 +16,8 @@ import paddle.fluid as fluid
 from paddle.fluid import ParamAttr
 
 from ..model import ModelBase
-from clf_model import LogisticModel
-import nextvlad_model
+from .clf_model import LogisticModel
+from . import nextvlad_model
 
 
 __all__ = ["NEXTVLAD"]

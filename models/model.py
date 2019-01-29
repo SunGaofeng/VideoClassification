@@ -21,9 +21,8 @@ except:
 
 import paddle.fluid as fluid
 from datareader import get_reader
-from  metrics import get_metrics
-import utils
-from utils import download, AttrDict
+from metrics import get_metrics
+from .utils import download, AttrDict
 
 WEIGHT_DIR = os.path.expanduser("~/.paddle/weights")
 
@@ -75,18 +74,24 @@ class ModelConfig(object):
         for k, v in cfg_dict.items():
             if v is None:
                 continue
-            if hasattr(sec_dict, k):
-                setattr(sec_dict, k, v)
+            try:
+                if hasattr(sec_dict, k):
+                    setattr(sec_dict, k, v)
+            except:
+                pass
 
     def get_config_from_sec(self, sec, item):
-        if not hasattr(self.cfg, sec):
+        try:
+            if hasattr(self.cfg, sec):
+                sec_dict = getattr(self.cfg, sec)
+        except:
             return None
 
-        sec_dict = getattr(self.cfg, sec)
-        if not hasattr(sec_dict, item):
+        try:
+            if hasattr(sec_dict, item):
+                return getattr(sec_dict, item)
+        except:
             return None
-
-        return getattr(sec_dict, item)
 
     def get_configs(self):
         return self.cfg

@@ -16,7 +16,7 @@ import paddle.fluid as fluid
 from paddle.fluid import ParamAttr
 
 from ..model import ModelBase
-from tsn_res_model import TSN_ResNet
+from .tsn_res_model import TSN_ResNet
 
 __all__ = ["TSN"]
 

@@ -14,7 +14,7 @@ import paddle
 from PIL import Image, ImageEnhance
 import logging
 
-from reader_utils import DataReader
+from .reader_utils import DataReader
 
 logger = logging.getLogger(__name__)
 python_ver = sys.version_info

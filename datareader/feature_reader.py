@@ -1,4 +1,4 @@
-from reader_utils import DataReader
+from .reader_utils import DataReader
 try:
     import cPickle as pickle
     from cStringIO import StringIO

@@ -1,1 +1,1 @@
-from attention_lstm import *
+from .attention_lstm import *

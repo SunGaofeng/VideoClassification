@@ -15,7 +15,7 @@ import numpy as np
 import paddle.fluid as fluid
 
 from ..model import ModelBase
-from stnet_res_model import StNet_ResNet
+from .stnet_res_model import StNet_ResNet
 
 __all__ = ["STNET"]
 

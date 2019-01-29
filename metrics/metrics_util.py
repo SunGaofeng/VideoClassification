@@ -8,7 +8,7 @@ import logging
 import numpy as np
 from metrics.youtube8m import eval_util as youtube8m_metrics
 from metrics.kinetics import accuracy_metrics as kinetics_metrics
-from metrics.nonlocal import nonlocal_test_metrics as nonlocal_test_metrics
+from metrics.non_local import nonlocal_test_metrics as nonlocal_test_metrics
 
 logger = logging.getLogger(__name__)
 

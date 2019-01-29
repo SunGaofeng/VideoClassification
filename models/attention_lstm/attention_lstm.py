@@ -16,7 +16,7 @@ import paddle.fluid as fluid
 from paddle.fluid import ParamAttr
 
 from ..model import ModelBase
-from lstm_attention import LSTMAttentionModel
+from .lstm_attention import LSTMAttentionModel
 
 __all__ = ["AttentionLSTM"]
 
