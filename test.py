@@ -55,6 +55,8 @@ def test(test_model, args):
     place = fluid.CUDAPlace(0) if args.use_gpu else fluid.CPUPlace()
     exe = fluid.Executor(place)
 
+    if args.weights:
+        assert os.path.exists(args.weights), "Given weight dir {} not exist.".format(args.weights)
     weights = args.weights or test_model.get_weights()
     def if_exist(var):
         return os.path.exists(os.path.join(weights, var.name))
@@ -76,7 +78,7 @@ def test(test_model, args):
             test_metrics.accumulate(loss, pred, label)
 
             # metric here
-            if args.log_interval > 0 && test_iter % args.log_interval == 0:
+            if args.log_interval > 0 and test_iter % args.log_interval == 0:
                 info_str = '[EVAL] Batch {}'.format(test_iter)
                 test_metrics.calculate_and_log_out(loss, pred, label, info_str)
         test_metrics.finalize_and_log_out("[EVAL] eval finished. ")
