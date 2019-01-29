@@ -39,6 +39,8 @@ def parse_args():
                         help='training batch size. None to use config file setting.')
     parser.add_argument('--learning-rate', type=float, default=None,
                         help='learning rate use for training. None to use config file setting.')
+    parser.add_argument('--pretrain', type=str, default=None,
+                        help='path to pretrain weights. None to use default weights path in  ~/.paddle/weights.')
     parser.add_argument('--use-gpu', type=bool, default=True,
                         help='default use gpu.')
     parser.add_argument('--no-parallel', action='store_true', default=False,
@@ -104,9 +106,12 @@ def train(train_model, valid_model, args):
     exe.run(train_startup)
     exe.run(valid_startup)
 
-    pretrain_base = train_model.get_pretrain_weights()
-    if pretrain_base:
-        train_model.load_pretrained_params(exe, pretrain_base, train_prog, place)
+    if args.pretrain:
+        assert os.path.exists(args.pretrain), \
+                "Given pretrain weight dir {} not exist.".format(args.pretrain)
+    pretrain = args.pretrain or train_model.get_pretrain_weights()
+    if pretrain:
+        train_model.load_pretrained_params(exe, pretrain, train_prog, place)
 
     if args.no_parallel:
         train_exe = exe
