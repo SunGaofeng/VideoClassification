@@ -209,3 +209,4 @@ class StNet_ResNet():
                                   initializer=fluid.initializer.Uniform(-stdv,
                                                                         stdv)))
         return out
+

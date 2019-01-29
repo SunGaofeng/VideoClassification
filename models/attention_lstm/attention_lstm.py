@@ -97,8 +97,6 @@ class AttentionLSTM(ModelBase):
 
     def optimizer(self):
         assert self.mode == 'train', "optimizer only can be get in train mode"
-        decay_epochs = self.decay_epochs
-        decay_gamma = self.decay_gamma
         values = [self.learning_rate * (self.decay_gamma ** i) for i in range(len(self.decay_epochs) + 1)]
         iter_per_epoch = self.num_samples / self.batch_size
         boundaries = [e * iter_per_epoch for e in self.decay_epochs]

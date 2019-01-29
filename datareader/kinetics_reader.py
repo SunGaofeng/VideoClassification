@@ -14,7 +14,6 @@ import paddle
 from PIL import Image, ImageEnhance
 import logging
 
-# from core.config import config as cfg
 from reader_utils import DataReader
 
 logger = logging.getLogger(__name__)
@@ -59,7 +58,7 @@ class KineticsReader(DataReader):
 
 
     def create_reader(self):
-        xx = _reader_creator(self.filelist, self.phase, seg_num=self.seg_num, seglen = self.seglen, \
+        _reader = _reader_creator(self.filelist, self.phase, seg_num=self.seg_num, seglen = self.seglen, \
                              short_size = self.short_size, target_size = self.target_size, \
                              img_mean = self.img_mean, img_std = self.img_std, \
                              shuffle = (self.phase == 'train'), \
@@ -67,7 +66,7 @@ class KineticsReader(DataReader):
                              buf_size = self.buf_size, format = self.format)
         def _batch_reader():
             batch_out = []
-            for imgs, label in xx():
+            for imgs, label in _reader():
                 if imgs is None:
                     continue
                 batch_out.append((imgs, label))

@@ -3,9 +3,7 @@ import time
 import sys
 import paddle.fluid as fluid
 import math
-import logging
 
-logger = logging.getLogger(__name__)
 
 class TSN_ResNet():
     def __init__(self, layers=50, seg_num=7, is_training = True):
@@ -70,10 +68,8 @@ class TSN_ResNet():
         layers = self.layers
         seg_num = self.seg_num
         supported_layers = [50, 101, 152]
-        if layers not in supported_layers:
-            logger.info("supported layers are", supported_layers, \
-                  "but input layer is ", layers)
-            exit()
+        assert layers in supported_layers, \
+            "supported layers are {} but input layer is {}".format(supported_layers, layers)
 
         # reshape input
         channels = input.shape[2]

@@ -148,8 +148,7 @@ class STNET(ModelBase):
 
 
     def create_metrics_args(self):
-        cfg = {}
-        return cfg
+        return {}
 
 
     def load_pretrained_params(self, exe, pretrain_base, prog, place):
@@ -168,7 +167,4 @@ class STNET(ModelBase):
         param_numpy = np.mean(param_numpy, axis=1, keepdims=True) / self.seglen
         param_numpy = np.repeat(param_numpy, 3*self.seglen, axis=1)
         param_tensor.set(param_numpy.astype(np.float32), place)
-
-
-
 

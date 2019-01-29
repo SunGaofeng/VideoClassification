@@ -50,12 +50,12 @@ class Youtube8mMetrics(Metrics):
 
     def finalize_and_log_out(self, info = ''):
         epoch_info_dict = self.calculator.get()
-        print(info + 'avg_hit_at_one: {0},\tavg_perr: {1},\tavg_loss :{2},\taps: {3},\tgap:{4}'\
+        logger.info(info + '\tavg_hit_at_one: {0},\tavg_perr: {1},\tavg_loss :{2},\taps: {3},\tgap:{4}'\
                      .format(epoch_info_dict['avg_hit_at_one'], epoch_info_dict['avg_perr'], \
                              epoch_info_dict['avg_loss'], epoch_info_dict['aps'], epoch_info_dict['gap']))
 
     def reset(self):
-        self.calculator.clear() #reset()
+        self.calculator.clear()
 
 
 class Kinetics400Metrics(Metrics):
@@ -144,11 +144,14 @@ class MetricsZoo(object):
                 return v(name, mode, **cfg)
         raise MetricsNotFoundError(name, self.metrics_zoo.keys())
 
-# singleton model_zoo
+# singleton metrics_zoo
 metrics_zoo = MetricsZoo()
 
 def regist_metrics(name, metrics):
     metrics_zoo.regist(name, metrics)
+
+def get_metrics(name, mode = 'train', **cfg):
+    return metrics_zoo.get(name, mode, **cfg)
 
 regist_metrics("NEXTVLAD", Youtube8mMetrics)
 regist_metrics("ATTENTIONLSTM", Youtube8mMetrics)
@@ -157,7 +160,4 @@ regist_metrics("TSN", Kinetics400Metrics)
 regist_metrics("TSM", Kinetics400Metrics)
 regist_metrics("STNET", Kinetics400Metrics)
 regist_metrics("NONLOCAL", NonlocalMetrics)
-
-def get_metrics(name, mode = 'train', **cfg):
-    return metrics_zoo.get(name, mode, **cfg)
 

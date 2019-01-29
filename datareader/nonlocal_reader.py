@@ -180,7 +180,6 @@ def make_reader(filelist, batch_size, sample_times, is_training, shuffle, **data
 def make_multi_reader(filelist, batch_size, sample_times, is_training, shuffle, **dataset_args):
     fl = open(filelist).readlines()
     fl = [line.strip() for line in fl if line.strip() != '']
-    # fl = fl[:1920] #uncomment this for debug
 
     if shuffle:
         random.shuffle(fl)
@@ -189,7 +188,6 @@ def make_multi_reader(filelist, batch_size, sample_times, is_training, shuffle, 
     queue_size = 20
     reader_lists = [None] * n
     file_num = int(len(fl) // n)
-    # print('f num = ', len(fl))
     for i in range(n):
         if i < len(reader_lists) - 1:
             tmp_list = fl[i*file_num : (i+1)*file_num]
@@ -198,10 +196,8 @@ def make_multi_reader(filelist, batch_size, sample_times, is_training, shuffle, 
         reader_lists[i] = tmp_list
 
     def read_into_queue(flq, queue):
-        #print('len flq = ', len(flq))
         batch_out = []
         for line in flq:
-            # start_time = time.time()
             line_items = line.split(' ')
             fn = line_items[0]
             label = int(line_items[1])
@@ -213,7 +209,6 @@ def make_multi_reader(filelist, batch_size, sample_times, is_training, shuffle, 
                 start_frm = -1
                 spatial_pos = -1
                 in_sample_times = 1
-            # print('label = ', label)
             label = np.array([label]).astype(np.int64)
             # 1, get rgb data for fixed length of frames
             try:
@@ -238,8 +233,6 @@ def make_multi_reader(filelist, batch_size, sample_times, is_training, shuffle, 
                              spatial_pos = spatial_pos)
 
             batch_out.append((rgbdata, label))
-            #elapsed_time = time.time() - start_time
-            #print('read item time ', elapsed_time)
             if len(batch_out) == batch_size:
                 queue.put(batch_out)
                 batch_out = []
@@ -256,10 +249,7 @@ def make_multi_reader(filelist, batch_size, sample_times, is_training, shuffle, 
         reader_num = len(reader_lists)
         finish_num = 0
         while finish_num < reader_num:
-            #start_time = time.time()
             sample = queue.get()
-            #get_time = time.time() - start_time
-            #print('queue size = {}, get_time = {}'.format(queue.qsize(), get_time))
             if sample is None:
                 finish_num += 1
             else:

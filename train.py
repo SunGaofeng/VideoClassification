@@ -16,8 +16,8 @@ import os
 import sys
 import time
 import shutil
-import logging
 import argparse
+import logging
 import numpy as np
 import paddle.fluid as fluid
 
@@ -27,6 +27,7 @@ import models
 FORMAT = '[%(levelname)s: %(filename)s: %(lineno)4d]: %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT, stream=sys.stdout)
 logger = logging.getLogger(__name__)
+
 
 def parse_args():
     parser = argparse.ArgumentParser("Paddle Video train script")
