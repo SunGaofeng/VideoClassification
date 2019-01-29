@@ -76,7 +76,7 @@ def test(test_model, args):
             test_metrics.accumulate(loss, pred, label)
 
             # metric here
-            if test_iter % args.log_interval == 0:
+            if args.log_interval > 0 && test_iter % args.log_interval == 0:
                 info_str = '[EVAL] Batch {}'.format(test_iter)
                 test_metrics.calculate_and_log_out(loss, pred, label, info_str)
         test_metrics.finalize_and_log_out("[EVAL] eval finished. ")

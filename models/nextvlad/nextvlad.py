@@ -132,7 +132,7 @@ class NEXTVLAD(ModelBase):
     def create_dataset_args(self):
         dataset_args = {}
         dataset_args['num_classes'] = self.num_classes
-        if self.use_gpu and (self.py_reader is not None):
+        if self.use_gpu and self.py_reader:
             dataset_args['batch_size'] = int(self.batch_size / self.num_gpus)
         else:
             dataset_args['batch_size'] = self.batch_size

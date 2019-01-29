@@ -1,4 +1,3 @@
-
 import pickle
 import cv2
 import numpy as np
@@ -42,7 +41,7 @@ class ReaderZoo(object):
                 return v(name, mode, cfg)
         raise ReaderNotFoundError(name, self.reader_zoo.keys())
 
-# singleton model_zoo
+# singleton reader_zoo
 reader_zoo = ReaderZoo()
 
 def regist_reader(name, reader):

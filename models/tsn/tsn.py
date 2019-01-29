@@ -149,8 +149,5 @@ class TSN(ModelBase):
 
 
     def create_metrics_args(self):
-        cfg = {}
-        return cfg
-
-
+        return {}
 

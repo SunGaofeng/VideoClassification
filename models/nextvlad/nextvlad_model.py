@@ -119,15 +119,6 @@ class NeXtVLADModel(object):
                    gating_reduction = None,
                    l2_penalty = None,
                    **unused_params):
-    # set params
-    #vocab_size = vocab_size or cfg.class_dim
-    # vocab_size = class_dim
-    #cluster_size = cluster_size or cfg.cluster_size
-    #hidden1_size = hidden_size
-    #groups = groups or cfg.groups
-    #expansion = expansion or cfg.expansion
-    #drop_rate = drop_rate or cfg.drop_rate
-    #gating_reduction = gating_reduction or cfg.gating_reduction
 
     # calcluate vlad of video and audio
     video_nextvlad = NeXtVLAD(1024, cluster_size, is_training, expansion = expansion, groups = groups, inputname = 'video')

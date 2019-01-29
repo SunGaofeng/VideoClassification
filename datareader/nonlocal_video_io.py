@@ -41,7 +41,7 @@ def video_fast_get_frame(video_path, sampling_rate = 1, length = 64, start_frm =
 
 
 if __name__ == '__main__':
-    video_path = '/home/sungaofeng/docker/dockermount/data/k400/Kinetics_trimmed_processed_val/dancing_gangnam_style/rC7d3L8nSB4.mp4'
+    video_path = '~/docker/dockermount/data/k400/Kinetics_trimmed_processed_val/dancing_gangnam_style/rC7d3L8nSB4.mp4'
     vout = video_fast_get_frame(video_path)
     vout2 = video_fast_get_frame(video_path, \
                              sampling_rate = 2, length = 8, \

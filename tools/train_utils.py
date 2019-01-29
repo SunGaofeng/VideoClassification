@@ -114,13 +114,3 @@ def save_model(exe, program, save_dir, model_name, postfix=None):
         shutil.rmtree(model_path)
     fluid.io.save_persistables(exe, model_path, main_program=program)
 
-
-
-
-
-
-
-
-
-
-

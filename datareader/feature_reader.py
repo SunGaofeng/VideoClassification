@@ -1,4 +1,3 @@
-#from core.config import config as cfg
 from reader_utils import DataReader
 try:
     import cPickle as pickle
@@ -55,8 +54,8 @@ class FeatureReader(DataReader):
                         one_hot_label = make_one_hot(label, self.num_classes)
                     video = record['video']
 
-                    rgb = rgb[0:nframes, :]  # Is this necessary?
-                    audio = audio[0:nframes, :]  # Is this necessary?
+                    rgb = rgb[0:nframes, :]
+                    audio = audio[0:nframes, :]
 
                     rgb = dequantize(rgb, max_quantized_value=2., min_quantized_value=-2.)
                     audio = dequantize(audio, max_quantized_value=2, min_quantized_value=-2)
@@ -68,7 +67,7 @@ class FeatureReader(DataReader):
                         eigen_val = eigen_val + 1e-4
                         rgb = (rgb - 4. / 512) * eigen_val
                     if self.name == 'ATTENTIONCLUSTER':
-                        sample_inds = generate_random_tsn(rgb.shape[0], self.seg_num)
+                        sample_inds = generate_random_idx(rgb.shape[0], self.seg_num)
                         rgb = rgb[sample_inds]
                         audio = audio[sample_inds]
                     if self.phase != 'infer':
@@ -100,8 +99,7 @@ def make_one_hot(label, dim = 3862):
         one_hot_label[int(ind)] = 1
     return one_hot_label
 
-
-def generate_random_tsn(feature_len, seg_num):
+def generate_random_idx(feature_len, seg_num):
     idxs = []
     stride = float(feature_len) / seg_num
     for i in range(seg_num):

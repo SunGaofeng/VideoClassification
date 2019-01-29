@@ -25,9 +25,9 @@ import paddle.fluid as fluid
 
 import models
 
-logging.basicConfig()
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+FORMAT = '[%(levelname)s: %(filename)s: %(lineno)4d]: %(message)s'
+logging.basicConfig(level=logging.DEBUG, format=FORMAT, stream=sys.stdout)
+logger = logging.getLogger(__name__)
 
 def parse_args():
     parser = argparse.ArgumentParser()
