@@ -22,17 +22,17 @@ gradient_clip_norm = 1.0
 use_gpu = True
 num_gpus = 4
 batch_size = 160
-filelist = "./data/outlist"
+filelist = "./data/youtube8m/train.list"
 
 [VALID]
 batch_size = 160
-filelist = "./data/outlist"
+filelist = "./data/youtube8m/val.list"
 
 [TEST]
 batch_size = 40
-filelist = "./data/outlist"
+filelist = "./data/youtube8m/test.list"
 
 [INFER]
 batch_size = 40
-filelist = "./data/outlist"
+filelist = "./data/youtube8m/infer.list"
 

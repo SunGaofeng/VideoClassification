@@ -88,7 +88,10 @@ def infer(infer_model, args):
             infer_outs = exe.run(fetch_list=fetch_list, feed=infer_feeder.feed(data_feed_in))
             predictions = np.array(infer_outs[0])
             for i in range(len(predictions)):
-                results.append((video_id[i], predictions[i].argsort()[0-args.infer_topk:].tolist()))
+                topk_inds = predictions[i].argsort()[0-args.infer_topk:]
+                topk_inds = topk_inds[::-1]
+                preds = predictions[i][topk_inds]
+                results.append((video_id[i], preds.tolist(), topk_inds.tolist()))
             prev_time = cur_time
             cur_time = time.time()
             period = cur_time - prev_time

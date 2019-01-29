@@ -181,9 +181,9 @@ def decode_pickle(sample, phase, seg_num, seglen, short_size, target_size, img_m
     imgs /= img_std
     imgs = np.reshape(imgs, (seg_num, seglen*3, target_size, target_size))
 
-    if phase == 'train' or phase == 'valid':
+    if phase == 'train' or phase == 'valid' or phase == 'test':
         return imgs, label
-    elif phase == 'test':
+    elif phase == 'infer':
         return imgs, vid
 
 

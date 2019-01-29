@@ -57,7 +57,7 @@ class STNET(ModelBase):
         image_shape = [self.seg_num] + image_shape
         self.use_pyreader = use_pyreader
         if use_pyreader:
-            assert mode != 'infer', \
+            assert self.mode != 'infer', \
                         'pyreader is not recommendated when infer, please set use_pyreader to be false.'
             py_reader = fluid.layers.py_reader(
                            capacity = 100,

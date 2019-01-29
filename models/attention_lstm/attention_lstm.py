@@ -112,7 +112,7 @@ class AttentionLSTM(ModelBase):
         cost = fluid.layers.sigmoid_cross_entropy_with_logits(x=self.logit, label=self.label_input)
         cost = fluid.layers.reduce_sum(cost, dim=-1)
         sum_cost = fluid.layers.reduce_sum(cost)
-        self.loss_ = fluid.layers.scale(avg_cost, scale=gpu_nums, bias_after_scale=False)
+        self.loss_ = fluid.layers.scale(sum_cost, scale=self.gpu_num, bias_after_scale=False)
         return self.loss_
 
     def outputs(self):
